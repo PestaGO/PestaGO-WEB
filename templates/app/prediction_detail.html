@@ -11,8 +11,14 @@
                     <h3 class="text-primary">
                         <i class="fas fa-chart-bar me-2"></i>Analysis Results
                     </h3>
-                    <div class="overall-status {% if prediction.status == 'Healthy' %}status-healthy-bg{% else %}status-infected-bg{% endif %} animate-pulse">
-                        <i class="fas {% if prediction.status == 'Healthy' %}fa-check-circle{% else %}fa-exclamation-triangle{% endif %} me-2"></i>
+                    <div class="overall-status 
+                        {% if prediction.status == 'Healthy' %}status-healthy-bg
+                        {% elif prediction.status == 'No Detected Leaf' %}bg-secondary text-white
+                        {% else %}status-infected-bg{% endif %} animate-pulse">
+                        <i class="fas 
+                            {% if prediction.status == 'Healthy' %}fa-check-circle
+                            {% elif prediction.status == 'No Detected Leaf' %}fa-question-circle
+                            {% else %}fa-exclamation-triangle{% endif %} me-2"></i>
                         {{ prediction.status }}
                     </div>
                 </div>
@@ -36,7 +42,10 @@
                     
                     <div class="stat-item">
                         <div class="stat-label">Status</div>
-                        <div class="stat-value {% if prediction.status == 'Healthy' %}healthy-color{% else %}disease-color{% endif %}">
+                        <div class="stat-value 
+                            {% if prediction.status == 'Healthy' %}healthy-color
+                            {% elif prediction.status == 'No Detected Leaf' %}text-secondary
+                            {% else %}disease-color{% endif %}">
                             {{ prediction.status }}
                         </div>
                     </div>
@@ -80,7 +89,7 @@
                 
                 <!-- Recommendations Section -->
                 <div class="mt-4">
-                    <h5 class="text-primary">
+                    <h5 class="text-primary mb-2">
                         <i class="fas fa-lightbulb me-2"></i>Recommendations
                     </h5>
                     {% if prediction.status == 'Healthy' %}
@@ -88,6 +97,17 @@
                         <i class="fas fa-check-circle me-2"></i>
                         <strong>Good news!</strong> Your mangosteen leaf appears to be healthy.
                     </div>
+                    {% elif prediction.status == 'No Detected Leaf' %}
+                    <div class="alert alert-secondary">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>No mangosteen leaf detected!</strong> The uploaded image doesn't appear to contain a mangosteen leaf that our system can recognize.
+                    </div>
+                    <ul class="mt-2 ps-3">
+                        <li>Make sure you're uploading a clear image of a mangosteen leaf</li>
+                        <li>Ensure good lighting when taking the photo</li>
+                        <li>Try to center the leaf in the frame</li>
+                        <li>Avoid blurry or dark images</li>
+                    </ul>
                     {% else %}
                     <div class="alert alert-danger">
                         <i class="fas fa-exclamation-triangle me-2"></i>
@@ -121,16 +141,4 @@
         </div>
     </div>
 </div>
-
-<script>
-    $(document).ready(function() {
-        // Image zoom functionality
-        $('.result-image').click(function() {
-            var imgSrc = $(this).attr('src');
-            $('#modalImage').attr('src', imgSrc);
-            var modal = new bootstrap.Modal(document.getElementById('imageModal'));
-            modal.show();
-        });
-    });
-</script>
 {% endblock %} 

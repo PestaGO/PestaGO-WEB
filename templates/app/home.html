@@ -102,17 +102,4 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-    // Make upload area smaller when image is selected
-    $('#image-upload').change(function() {
-        const file = this.files[0];
-        if (file) {
-            // Shrink the upload area
-            $('#upload-area').addClass('upload-area-small');
-            $('#upload-area h4').text('Change Image');
-            $('#upload-area p').hide();
-            $('#upload-area .upload-icon').addClass('upload-icon-small');
-        }
-    });
-</script>
 {% endblock %} 

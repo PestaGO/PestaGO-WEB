@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import dj_database_url
 
 # Load environment variables from .env file
 load_dotenv()
@@ -89,9 +90,20 @@ DATABASES = {
     }
 }
 
+# Use DATABASE_URL environment variable if available
+if 'DATABASE_URL' in os.environ:
+    DATABASES['default'] = dj_database_url.config(
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
+
 # Session settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.file'
 SESSION_FILE_PATH = os.path.join(BASE_DIR, 'sessions')
+
+# For Render deployment, use database sessions if DATABASE_URL is available
+if 'DATABASE_URL' in os.environ:
+    SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 
 
 # Password validation
@@ -118,7 +130,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Manila'
 
 USE_I18N = True
 

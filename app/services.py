@@ -51,7 +51,7 @@ class LeafDiseaseDetector:
             cls._instance.model = None
             cls._instance.temp_dir = tempfile.mkdtemp(prefix="leaf_disease_")
             # Create a cleanup method to remove old files
-            cls._instance._cleanup_old_files()
+            cls._instance.cleanup_old_files()
         return cls._instance
     
     def load_model(self):
@@ -176,9 +176,14 @@ class LeafDiseaseDetector:
     
     def get_status(self, results):
         """Return the overall status of the leaf based on prediction results."""
-        if results['Infected Leaf']['count'] > 0 or results['Disease Part']['count'] > 0:
+        total_detections = results['Healthy']['count'] + results['Infected Leaf']['count'] + results['Disease Part']['count']
+        
+        if total_detections == 0:
+            return "No Detected Leaf"
+        elif results['Infected Leaf']['count'] > 0 or results['Disease Part']['count'] > 0:
             return "Infected"
-        return "Healthy"
+        else:
+            return "Healthy"
     
     def save_result_image(self, img, results):
         """Save the annotated image with results and return the file path and base64 data."""
