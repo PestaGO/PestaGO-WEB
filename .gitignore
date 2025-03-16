@@ -1,6 +1,6 @@
 env/
 mangosteen_lead_disease_detection.py
-.env.example
+.env
 *.pyc
 *.pyo
 *.pyd
