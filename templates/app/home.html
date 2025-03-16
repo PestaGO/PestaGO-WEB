@@ -1,0 +1,118 @@
+{% extends 'app/base.html' %}
+
+{% block title %}PestaGO{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 col-lg-8 mx-auto">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-2">
+                    <i class="fas fa-leaf text-success me-2"></i>PestaGO
+                </h2>
+                
+                <p class="text-center text-muted small mb-3">
+                    A MOBILE APPLICATION TO IDENTIFY MANGOSTEEN LEAF DISEASE<br>
+                    (Pestalotiopsis leaf blight) USING YOLOv8
+                </p>
+                
+                <p class="lead text-center mb-2">
+                    Upload a mangosteen leaf image to detect diseases
+                </p>
+                
+                {% if error %}
+                <div class="alert alert-danger" id="error-message">
+                    {{ error }}
+                </div>
+                {% else %}
+                <div class="alert alert-danger" id="error-message" style="display: none;"></div>
+                {% endif %}
+                
+                <div class="row justify-content-center mb-4">
+                    <div class="col-12 col-md-10 col-lg-8">
+                        <form method="post" action="{% url 'predict' %}" enctype="multipart/form-data" id="prediction-form">
+                            {% csrf_token %}
+                            <div class="card shadow-sm">
+                                <div class="card-body">
+                                    <label for="image-upload" class="w-100 m-0 cursor-pointer">
+                                        <div class="upload-area text-center p-4" id="upload-area">
+                                            <i class="fas fa-leaf upload-icon"></i>
+                                            <h4 class="mb-2">Tap to Upload</h4>
+                                            <p class="text-muted mb-3">Select a mangosteen leaf image (JPG, JPEG, PNG)</p>
+                                            <input type="file" name="image" id="image-upload" accept=".jpg,.jpeg,.png" class="d-none">
+                                            <div id="preview-container" class="mt-3" style="display: none;"></div>
+                                            <div id="error-message" class="alert alert-danger mt-3" style="display: none;"></div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Loading Spinner -->
+                            <div class="loading-spinner text-center my-3" id="loading-spinner" style="display: none;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Analyzing your leaf image...</p>
+                            </div>
+                            
+                            <!-- Submit Button -->
+                            <div class="text-center mb-4">
+                                <button type="submit" class="btn btn-primary btn-lg px-4" id="submit-btn">
+                                    <i class="fas fa-microscope me-2"></i>Analyze Leaf
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-light">
+                <h3 class="mb-0">How It Works</h3>
+            </div>
+            <div class="card-body p-3">
+                <div class="row g-3">
+                    <div class="col-4 text-center">
+                        <div class="bg-light p-2 rounded h-100 d-flex flex-column align-items-center justify-content-center">
+                            <i class="fas fa-upload text-primary mb-2" style="font-size: 2rem;"></i>
+                            <h5 class="fs-6">Upload</h5>
+                            <p class="small text-center mt-1 mb-0">Select a leaf photo</p>
+                        </div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="bg-light p-2 rounded h-100 d-flex flex-column align-items-center justify-content-center">
+                            <i class="fas fa-cogs text-primary mb-2" style="font-size: 2rem;"></i>
+                            <h5 class="fs-6">Analyze</h5>
+                            <p class="small text-center mt-1 mb-0">AI processes image</p>
+                        </div>
+                    </div>
+                    <div class="col-4 text-center">
+                        <div class="bg-light p-2 rounded h-100 d-flex flex-column align-items-center justify-content-center">
+                            <i class="fas fa-chart-bar text-primary mb-2" style="font-size: 2rem;"></i>
+                            <h5 class="fs-6">Results</h5>
+                            <p class="small text-center mt-1 mb-0">Get diagnosis</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Make upload area smaller when image is selected
+    $('#image-upload').change(function() {
+        const file = this.files[0];
+        if (file) {
+            // Shrink the upload area
+            $('#upload-area').addClass('upload-area-small');
+            $('#upload-area h4').text('Change Image');
+            $('#upload-area p').hide();
+            $('#upload-area .upload-icon').addClass('upload-icon-small');
+        }
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,9 @@
+env/
+mangosteen_lead_disease_detection.py
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+*.pywz
+*.pyzw
