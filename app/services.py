@@ -130,14 +130,33 @@ class LeafDiseaseDetector:
         # Process results
         results = {cls: {'count': 0, 'confidences': []} for cls in CLASSES}
         
-        # First, collect all Infected Leaf boxes
-        infected_leaf_boxes = []
+        # First, collect all Disease Part boxes
+        disease_part_boxes = []
+        for box in predictions.boxes:
+            cls = int(box.cls[0].cpu().numpy())
+            class_name = predictions.names[cls]
+            if class_name == 'Disease Part':
+                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                disease_part_boxes.append((x1, y1, x2, y2))
+
+        # Then, collect all Infected Leaf boxes and filter them
+        valid_infected_leaf_boxes = []
         for box in predictions.boxes:
             cls = int(box.cls[0].cpu().numpy())
             class_name = predictions.names[cls]
             if class_name == 'Infected Leaf':
                 x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-                infected_leaf_boxes.append((x1, y1, x2, y2))
+                # Check if this infected leaf contains any disease parts
+                has_disease_part = False
+                for d_x1, d_y1, d_x2, d_y2 in disease_part_boxes:
+                    # Check if disease part box center is inside this infected leaf box
+                    disease_center_x = (d_x1 + d_x2) / 2
+                    disease_center_y = (d_y1 + d_y2) / 2
+                    if (x1 <= disease_center_x <= x2 and y1 <= disease_center_y <= y2):
+                        has_disease_part = True
+                        break
+                if has_disease_part:
+                    valid_infected_leaf_boxes.append((x1, y1, x2, y2))
         
         # Draw bounding boxes and collect statistics
         for box in predictions.boxes:
@@ -151,10 +170,16 @@ class LeafDiseaseDetector:
             
             x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
             
-            # Skip Disease Part detections that are not inside any Infected Leaf
+            # Skip Infected Leaf detections that don't contain Disease Parts
+            if class_name == 'Infected Leaf':
+                box_coords = (x1, y1, x2, y2)
+                if box_coords not in valid_infected_leaf_boxes:
+                    continue
+            
+            # Skip Disease Part detections that are not inside any valid Infected Leaf
             if class_name == 'Disease Part':
                 is_inside_infected = False
-                for leaf_x1, leaf_y1, leaf_x2, leaf_y2 in infected_leaf_boxes:
+                for leaf_x1, leaf_y1, leaf_x2, leaf_y2 in valid_infected_leaf_boxes:
                     # Check if disease part box center is inside infected leaf box
                     disease_center_x = (x1 + x2) / 2
                     disease_center_y = (y1 + y2) / 2
@@ -164,7 +189,7 @@ class LeafDiseaseDetector:
                         break
                 if not is_inside_infected:
                     continue
-                
+            
             if class_name in results:
                 results[class_name]['count'] += 1
                 results[class_name]['confidences'].append(conf)

@@ -19,6 +19,10 @@ body {
     max-width: 100%;
     overflow-x: hidden;
     padding-bottom: 70px; /* Space for bottom navigation */
+    overscroll-behavior: none; /* Prevent pull-to-refresh */
+    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+    touch-action: manipulation; /* Optimize for touch */
+    background-color: #f8f9fa;
 }
 
 /* Animation for cards */
@@ -147,6 +151,36 @@ body {
     color: var(--danger-color);
 }
 
+/* Status colors */
+.healthy-color { color: #28a745; }
+.infected-color { color: #fd7e14; }
+.disease-color { color: #dc3545; }
+
+.status-healthy-bg {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+.status-infected-bg {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+/* Animation for status */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.8; }
+    100% { opacity: 1; }
+}
+
+.animate-pulse {
+    animation: pulse 2s infinite;
+}
+
 /* Page transitions */
 .page-transition {
     animation: fadeIn 0.5s ease-out;
@@ -194,6 +228,18 @@ body {
 .mobile-nav-item i {
     font-size: 1.5rem;
     margin-bottom: 5px;
+}
+
+/* Camera styles */
+.camera-area {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+#camera-preview, #camera-canvas {
+    border-radius: 8px;
+    max-height: 50vh;
+    object-fit: contain;
 }
 
 /* Enhanced upload area */
@@ -252,6 +298,40 @@ body {
 
 .upload-icon i {
     animation: pulse 2s infinite;
+}
+
+/* Result image */
+.result-image {
+    max-height: 50vh;
+    object-fit: contain;
+}
+
+/* Logo styles */
+.logo-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 70vh;
+}
+
+.logo-img {
+    width: 150px;
+    height: auto;
+    margin-bottom: 1.5rem;
+    animation: pulse 3s infinite;
+}
+
+.header-icon {
+    height: 40px;
+    width: auto;
+    vertical-align: middle;
+}
+
+.logo-text {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #333;
 }
 
 /* Preview container */
@@ -325,19 +405,6 @@ body {
 .stat-value {
     font-size: 1.2rem;
     font-weight: 700;
-}
-
-.healthy-color {
-    color: var(--secondary-color);
-}
-
-.infected-color {
-    color: var(--warning-color);
-}
-
-/* Animation for status indicator */
-.animate-pulse {
-    animation: pulse 2s infinite;
 }
 
 /* Status badges */
