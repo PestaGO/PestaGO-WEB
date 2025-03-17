@@ -1,0 +1,76 @@
+{% extends 'app/base.html' %}
+{% load static %}
+
+{% block title %}Results - PestaGO{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 col-lg-8 mx-auto">
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <div class="text-center d-flex flex-column align-items-center justify-content-center" style="min-height: 80px;">
+                    <h3 class="mb-0" style="font-size: 2rem; display: flex; align-items: center; justify-content: center;">
+                        <img src="{% static 'img/icon.svg' %}" alt="PestaGO" class="header-icon" style="height: 50px; margin-right: 15px; vertical-align: middle;">
+                        <span style="vertical-align: middle;">Detection Result</span>
+                    </h3>
+                </div>
+            </div>
+            <div class="card-body p-3">
+                <!-- Image Section -->
+                <div class="text-center mb-3">
+                    <img src="{% url 'serve_image' 'result' %}" alt="Prediction Result" class="img-fluid rounded result-image shadow" style="cursor: pointer;" data-bs-toggle="tooltip" title="Tap to zoom">
+                </div>
+                
+                <!-- Simple Result Section -->
+                <div class="text-center mb-4">
+                    <div class="fs-5 fw-bold 
+                        {% if prediction.status == 'Healthy' %}status-healthy-bg
+                        {% elif prediction.status == 'No Detected Leaf' %}bg-secondary text-white
+                        {% else %}status-infected-bg{% endif %} animate-pulse d-inline-block">
+                        <i class="fas 
+                            {% if prediction.status == 'Healthy' %}fa-check-circle
+                            {% elif prediction.status == 'No Detected Leaf' %}fa-question-circle
+                            {% else %}fa-exclamation-triangle{% endif %} me-2"></i>
+                        {{ prediction.status }}
+                    </div>
+                </div>
+                
+                <!-- Stats Section -->
+                <div class="row justify-content-center">
+                    <div class="col-12 col-md-10">
+                        <div class="d-flex justify-content-between bg-light p-2 rounded mb-2">
+                            <div class="fw-bold">Healthy Leaves:</div>
+                            <div class="d-flex align-items-center">
+                                <span class="healthy-color me-2">{{ prediction.healthy_count }}</span>
+                                {% if prediction.healthy_count > 0 %}
+                                <span class="badge bg-success">{{ prediction.healthy_confidence|floatformat:1 }}%</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between bg-light p-2 rounded mb-2">
+                            <div class="fw-bold">Infected Leaves:</div>
+                            <div class="d-flex align-items-center">
+                                <span class="infected-color me-2">{{ prediction.infected_leaf_count }}</span>
+                                {% if prediction.infected_leaf_count > 0 %}
+                                <span class="badge bg-warning">{{ prediction.infected_leaf_confidence|floatformat:1 }}%</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between bg-light p-2 rounded">
+                            <div class="fw-bold">Disease Parts:</div>
+                            <div class="d-flex align-items-center">
+                                <span class="disease-color me-2">{{ prediction.disease_part_count }}</span>
+                                {% if prediction.disease_part_count > 0 %}
+                                <span class="badge bg-danger">{{ prediction.disease_part_confidence|floatformat:1 }}%</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

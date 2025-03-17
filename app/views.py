@@ -13,7 +13,7 @@ from datetime import datetime
 from .services import LeafDiseaseDetector
 
 def home(request):
-    """Home page view."""
+    """Home page view with logo, navigation buttons, and about section."""
     # Clear any previous prediction data from session
     if 'prediction_results' in request.session:
         del request.session['prediction_results']
@@ -133,7 +133,7 @@ def predict(request):
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': True,
-                    'redirect_url': '/prediction_detail/',
+                    'redirect_url': '/result/',
                     'status': status,
                     'healthy_count': results['Healthy']['count'],
                     'infected_leaf_count': results['Infected Leaf']['count'],
@@ -141,7 +141,7 @@ def predict(request):
                 })
             
             # Redirect to result page for regular form submissions
-            return redirect('prediction_detail')
+            return redirect('result')
             
         except Exception as e:
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -157,7 +157,7 @@ def predict(request):
     # Redirect to home for GET requests
     return redirect('home')
 
-def prediction_detail(request):
+def result(request):
     """Display detailed prediction results."""
     # Get prediction results from session
     prediction_results = request.session.get('prediction_results')
@@ -165,7 +165,7 @@ def prediction_detail(request):
     if not prediction_results:
         return redirect('home')
     
-    return render(request, 'app/prediction_detail.html', {
+    return render(request, 'app/result.html', {
         'prediction': prediction_results,
     })
 
@@ -187,7 +187,3 @@ def serve_image(request, image_type):
         return redirect('home')
     
     return FileResponse(open(image_path, 'rb'))
-
-def about(request):
-    """About page view."""
-    return render(request, 'app/about.html')

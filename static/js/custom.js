@@ -99,20 +99,25 @@ $(document).ready(function() {
     // Image zoom functionality for result images
     const resultImages = document.querySelectorAll('.result-image');
     resultImages.forEach(img => {
+        // Remove any existing click listeners first
+        img.replaceWith(img.cloneNode(true));
+    });
+    
+    // Re-select the images after replacing them (to clear event listeners)
+    document.querySelectorAll('.result-image').forEach(img => {
         img.addEventListener('click', function() {
-            // For the imageZoomModal (used in base.html)
             if (document.getElementById('imageZoomModal')) {
-                const modal = new bootstrap.Modal(document.getElementById('imageZoomModal'));
-                document.getElementById('zoomedImage').src = this.src;
+                const zoomedImage = document.getElementById('zoomedImage');
+                zoomedImage.src = this.src;
+                
+                const modalElement = document.getElementById('imageZoomModal');
+                const modal = new bootstrap.Modal(modalElement);
                 modal.show();
-            }
-            
-            // For the imageModal (used in prediction_detail.html)
-            if (document.getElementById('imageModal')) {
-                const imgSrc = this.getAttribute('src');
-                document.getElementById('modalImage').setAttribute('src', imgSrc);
-                const modal = new bootstrap.Modal(document.getElementById('imageModal'));
-                modal.show();
+                
+                // Clean up when modal is hidden
+                $(modalElement).one('hidden.bs.modal', function() {
+                    zoomedImage.src = '';
+                });
             }
         });
     });

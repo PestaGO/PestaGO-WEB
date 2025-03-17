@@ -147,22 +147,6 @@ body {
     color: var(--danger-color);
 }
 
-.overall-status {
-    font-size: 1.2rem;
-    font-weight: 700;
-    padding: 0.6rem 1.2rem;
-    border-radius: 50px;
-    display: inline-block;
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-    margin-bottom: 1rem;
-}
-
-.overall-status:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
-}
-
 .status-healthy-bg {
     background-color: rgba(76, 175, 80, 0.15);
     color: var(--secondary-color);
@@ -451,11 +435,6 @@ body {
     
     .navbar {
         padding: 10px 15px;
-    }
-    
-    .overall-status {
-        font-size: 1.2rem;
-        padding: 0.4rem 0.8rem;
     }
     
     .card-title {
