@@ -5,29 +5,13 @@ import uuid
 import tempfile
 from django.conf import settings
 from ultralytics import YOLO
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 import io
 import base64
 import time
 from pathlib import Path
 import torch
-
-# Check PyTorch version and import add_safe_globals if available
-HAS_SAFE_GLOBALS = False
-try:
-    from torch.serialization import add_safe_globals
-    HAS_SAFE_GLOBALS = True
-    
-    # Add the necessary YOLOv8 classes to the safe globals list
-    try:
-        from ultralytics.nn.tasks import DetectionModel
-        add_safe_globals([DetectionModel])
-    except (ImportError, AttributeError):
-        # Fallback if the specific class can't be imported
-        pass
-except ImportError:
-    # Using an older version of PyTorch that doesn't have add_safe_globals
-    pass
+import gc
 
 # Constants
 CONFIDENCE_THRESHOLD = 0.6
@@ -57,41 +41,44 @@ class LeafDiseaseDetector:
     def load_model(self):
         """Load the YOLOv8 model."""
         if self.model is None:
+            # Force garbage collection before loading model
+            gc.collect()
+            torch.cuda.empty_cache() if torch.cuda.is_available() else None
+            
             model_path = settings.MODEL_PATH
             if not os.path.exists(model_path):
                 raise FileNotFoundError(f"Model file not found at {model_path}")
             
             try:
-                # For PyTorch < 2.6, this should work directly
-                if not HAS_SAFE_GLOBALS:
-                    self.model = YOLO(model_path)
-                else:
-                    # For PyTorch >= 2.6, try with the new approach
-                    self.model = YOLO(model_path)
-            except Exception as e:
-                # Fallback to loading with weights_only=False if needed
-                print(f"Error loading model with default settings: {e}")
-                print("Attempting to load with weights_only=False...")
+                # Load model with task-specific parameters to reduce memory
+                self.model = YOLO(model_path, task='detect')
                 
-                # Set environment variable to allow loading with weights_only=False
-                os.environ["TORCH_LOAD_WEIGHTS_ONLY"] = "0"
+                # Set model to evaluation mode and optimize for inference
+                if hasattr(self.model, 'model') and hasattr(self.model.model, 'eval'):
+                    self.model.model.eval()
+                
+                # Use half precision if available (reduces memory by ~2x)
+                if torch.cuda.is_available():
+                    if hasattr(self.model, 'model') and hasattr(self.model.model, 'half'):
+                        self.model.model.half()
+                
+                print(f"Model loaded successfully from {model_path}")
+            except Exception as e:
+                print(f"Error loading model: {e}")
+                # Fallback to loading with weights_only=True
                 try:
-                    self.model = YOLO(model_path)
-                    print("Model loaded successfully with weights_only=False")
+                    self.model = YOLO(model_path, task='detect')
+                    print("Model loaded with fallback method")
                 except Exception as fallback_error:
                     raise RuntimeError(f"Failed to load model: {fallback_error}")
-                finally:
-                    # Reset environment variable
-                    os.environ.pop("TORCH_LOAD_WEIGHTS_ONLY", None)
-            
-            print(f"Model loaded successfully from {model_path}")
+        
         return self.model
     
     def cleanup_old_files(self):
-        """Clean up temporary files older than 15 minutes."""
+        """Clean up temporary files older than 5 minutes."""
         current_time = time.time()
         for file_path in Path(self.temp_dir).glob("*"):
-            if current_time - file_path.stat().st_mtime > 900:  # 15 minutes
+            if current_time - file_path.stat().st_mtime > 300:  # 5 minutes
                 try:
                     os.remove(file_path)
                 except Exception as e:
@@ -116,19 +103,29 @@ class LeafDiseaseDetector:
         # Ensure model is loaded
         self.load_model()
         
-        # Read image
+        # Read and resize image to reduce memory usage
         img = cv2.imread(image_path)
+        
+        # Resize large images to reduce memory usage
+        h, w = img.shape[:2]
+        max_dim = 1280
+        if max(h, w) > max_dim:
+            scale = max_dim / max(h, w)
+            new_h, new_w = int(h * scale), int(w * scale)
+            img = cv2.resize(img, (new_w, new_h))
+        
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         
-        # Make prediction
-        predictions = self.model.predict(
-            source=image_path,
-            conf=CONFIDENCE_THRESHOLD,
-            iou=IOU_THRESHOLD,
-            max_det=MAX_DETECTIONS,
-            agnostic_nms=True,
-            verbose=False
-        )[0]
+        # Make prediction with optimized settings
+        with torch.no_grad():  # Disable gradient calculation
+            predictions = self.model.predict(
+                source=img,  # Pass the image directly instead of path
+                conf=CONFIDENCE_THRESHOLD,
+                iou=IOU_THRESHOLD,
+                max_det=MAX_DETECTIONS,
+                agnostic_nms=True,
+                verbose=False
+            )[0]
         
         # Process results
         results = {cls: {'count': 0, 'confidences': []} for cls in CLASSES}
@@ -148,7 +145,7 @@ class LeafDiseaseDetector:
             conf = float(box.conf[0].cpu().numpy())
             class_name = predictions.names[cls]
             
-            # Additional confidence check (redundant with model prediction conf but kept for consistency)
+            # Additional confidence check
             if conf < CONFIDENCE_THRESHOLD:
                 continue
             
@@ -196,6 +193,10 @@ class LeafDiseaseDetector:
             else:
                 data['avg_confidence'] = 0.0
         
+        # Force garbage collection after prediction
+        gc.collect()
+        torch.cuda.empty_cache() if torch.cuda.is_available() else None
+        
         return img, results
     
     def get_status(self, results):
@@ -214,16 +215,27 @@ class LeafDiseaseDetector:
         # Convert numpy array to PIL Image
         pil_img = Image.fromarray(img)
         
-        # Save to buffer for base64 encoding
+        # Optimize image size - resize if too large
+        max_dim = 1024
+        if max(pil_img.width, pil_img.height) > max_dim:
+            if pil_img.width > pil_img.height:
+                new_width = max_dim
+                new_height = int(pil_img.height * (max_dim / pil_img.width))
+            else:
+                new_height = max_dim
+                new_width = int(pil_img.width * (max_dim / pil_img.height))
+            pil_img = pil_img.resize((new_width, new_height), Image.LANCZOS)
+        
+        # Save to buffer with compression
         buf = io.BytesIO()
-        pil_img.save(buf, format='PNG')
+        pil_img.save(buf, format='JPEG', quality=85, optimize=True)
         buf.seek(0)
         
         # Generate base64 data
         base64_data = base64.b64encode(buf.getvalue()).decode('utf-8')
         
         # Also save to a temporary file
-        result_filename = f"result_{uuid.uuid4()}.png"
+        result_filename = f"result_{uuid.uuid4()}.jpg"
         result_path = os.path.join(self.temp_dir, result_filename)
         with open(result_path, 'wb') as f:
             f.write(buf.getvalue())

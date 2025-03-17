@@ -64,15 +64,15 @@ def predict(request):
                         'error': f"Unsupported file format. Please upload a {', '.join(valid_extensions)} file.",
                     })
                 
-                # Validate file size (limit to 10MB)
-                if uploaded_file.size > 10 * 1024 * 1024:
+                # Validate file size (limit to 5MB)
+                if uploaded_file.size > 5 * 1024 * 1024:
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return JsonResponse({
                             'success': False,
-                            'error': "The image file is too large. Please upload an image smaller than 10MB.",
+                            'error': "The image file is too large. Please upload an image smaller than 5MB.",
                         })
                     return render(request, 'app/home.html', {
-                        'error': "The image file is too large. Please upload an image smaller than 10MB.",
+                        'error': "The image file is too large. Please upload an image smaller than 5MB.",
                     })
                 
                 # Save uploaded image
@@ -110,14 +110,14 @@ def predict(request):
             # Get overall status
             status = detector.get_status(results)
             
-            # Create prediction result dictionary
+            # Create prediction result dictionary - store minimal data
             prediction_result = {
                 'id': str(uuid.uuid4()),
                 'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 'status': status,
                 'image_path': image_path,
                 'result_path': result_path,
-                'result_base64': result_base64,
+                # Don't store base64 data in session to reduce memory usage
                 'healthy_count': results['Healthy']['count'],
                 'infected_leaf_count': results['Infected Leaf']['count'],
                 'disease_part_count': results['Disease Part']['count'],
@@ -129,15 +129,21 @@ def predict(request):
             # Store in session
             request.session['prediction_results'] = prediction_result
             
+            # Clean up memory
+            img = None
+            results = None
+            import gc
+            gc.collect()
+            
             # Return JSON response for AJAX requests
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': True,
                     'redirect_url': '/result/',
                     'status': status,
-                    'healthy_count': results['Healthy']['count'],
-                    'infected_leaf_count': results['Infected Leaf']['count'],
-                    'disease_part_count': results['Disease Part']['count'],
+                    'healthy_count': prediction_result['healthy_count'],
+                    'infected_leaf_count': prediction_result['infected_leaf_count'],
+                    'disease_part_count': prediction_result['disease_part_count'],
                 })
             
             # Redirect to result page for regular form submissions

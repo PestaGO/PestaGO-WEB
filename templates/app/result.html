@@ -24,13 +24,13 @@
                 <!-- Simple Result Section -->
                 <div class="text-center mb-4">
                     <div class="fs-5 fw-bold 
-                        {% if prediction.status == 'Healthy' %}status-healthy-bg
+                        {% if prediction.status == 'Healthy' %}bg-success text-white
                         {% elif prediction.status == 'No Detected Leaf' %}bg-secondary text-white
-                        {% else %}status-infected-bg{% endif %} animate-pulse d-inline-block">
+                        {% else %}bg-danger text-white{% endif %} animate-pulse d-inline-block px-2 py-1 rounded-pill">
                         <i class="fas 
                             {% if prediction.status == 'Healthy' %}fa-check-circle
                             {% elif prediction.status == 'No Detected Leaf' %}fa-question-circle
-                            {% else %}fa-exclamation-triangle{% endif %} me-2"></i>
+                            {% else %}fa-exclamation-triangle{% endif %} me-1"></i>
                         {{ prediction.status }}
                     </div>
                 </div>

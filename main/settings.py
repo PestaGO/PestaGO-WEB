@@ -97,33 +97,27 @@ if 'DATABASE_URL' in os.environ:
         conn_health_checks=True,
     )
 
+# File upload settings - reduce memory usage
+FILE_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024  # 2MB instead of default 2.5MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024  # 2MB instead of default 2.5MB
+
 # Session settings
-SESSION_ENGINE = 'django.contrib.sessions.backends.file'
-SESSION_FILE_PATH = os.path.join(BASE_DIR, 'sessions')
+SESSION_ENGINE = 'django.contrib.sessions.backends.file'  # Use file-based sessions instead of database
+SESSION_COOKIE_AGE = 3600  # 1 hour instead of 2 weeks
+SESSION_SAVE_EVERY_REQUEST = False
 
-# For Render deployment, use database sessions if DATABASE_URL is available
-if 'DATABASE_URL' in os.environ:
-    SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-
-
-# Password validation
-# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
-
+# Cache settings
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'TIMEOUT': 300,  # 5 minutes
+        'OPTIONS': {
+            'MAX_ENTRIES': 100,  # Limit cache entries
+            'CULL_FREQUENCY': 2,  # Fraction of entries to cull when max is reached
+        }
+    }
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
