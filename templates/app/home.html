@@ -17,7 +17,7 @@
                 </p>
                 
                 <p class="lead text-center mb-2">
-                    Upload a mangosteen leaf image to detect diseases
+                    Upload or capture a mangosteen leaf image to detect diseases
                 </p>
                 
                 {% if error %}
@@ -34,18 +34,46 @@
                             {% csrf_token %}
                             <div class="card shadow-sm">
                                 <div class="card-body">
+                                    <div class="text-center mb-3">
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-outline-primary" id="upload-btn">
+                                                <i class="fas fa-upload me-2"></i>Upload Image
+                                            </button>
+                                            <button type="button" class="btn btn-outline-primary" id="camera-btn">
+                                                <i class="fas fa-camera me-2"></i>Take Photo
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
                                     <label for="image-upload" class="w-100 m-0 cursor-pointer">
                                         <div class="upload-area text-center p-4" id="upload-area">
                                             <i class="fas fa-leaf upload-icon"></i>
                                             <h4 class="mb-2">Tap to Upload</h4>
                                             <p class="text-muted mb-3">Select a mangosteen leaf image (JPG, JPEG, PNG)</p>
-                                            <input type="file" name="image" id="image-upload" accept=".jpg,.jpeg,.png" class="d-none">
+                                            <input type="file" name="image" id="image-upload" accept=".jpg,.jpeg,.png" class="d-none" capture="environment">
                                             <div id="preview-container" class="mt-3" style="display: none;"></div>
                                             <div id="error-message" class="alert alert-danger mt-3" style="display: none;"></div>
                                         </div>
                                     </label>
+                                    
+                                    <!-- Camera Capture Area -->
+                                    <div class="camera-area text-center p-4" id="camera-area" style="display: none;">
+                                        <video id="camera-preview" class="w-100 rounded" style="display: none;"></video>
+                                        <canvas id="camera-canvas" class="w-100 rounded" style="display: none;"></canvas>
+                                        <div class="mt-3">
+                                            <button type="button" class="btn btn-primary me-2" id="capture-btn">
+                                                <i class="fas fa-camera me-2"></i>Capture
+                                            </button>
+                                            <button type="button" class="btn btn-secondary" id="retake-btn" style="display: none;">
+                                                <i class="fas fa-redo me-2"></i>Retake
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+                            
+                            <!-- Hidden input for camera captured image -->
+                            <input type="hidden" name="camera_image" id="camera-image-data">
                             
                             <!-- Loading Spinner -->
                             <div class="loading-spinner text-center my-3" id="loading-spinner" style="display: none;">
@@ -77,7 +105,7 @@
                         <div class="bg-light p-2 rounded h-100 d-flex flex-column align-items-center justify-content-center">
                             <i class="fas fa-upload text-primary mb-2" style="font-size: 2rem;"></i>
                             <h5 class="fs-6">Upload</h5>
-                            <p class="small text-center mt-1 mb-0">Select a leaf photo</p>
+                            <p class="small text-center mt-1 mb-0">Select or capture a leaf photo</p>
                         </div>
                     </div>
                     <div class="col-4 text-center">
@@ -102,4 +130,149 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const uploadBtn = document.getElementById('upload-btn');
+        const cameraBtn = document.getElementById('camera-btn');
+        const uploadArea = document.getElementById('upload-area');
+        const cameraArea = document.getElementById('camera-area');
+        const cameraPreview = document.getElementById('camera-preview');
+        const cameraCanvas = document.getElementById('camera-canvas');
+        const captureBtn = document.getElementById('capture-btn');
+        const retakeBtn = document.getElementById('retake-btn');
+        const cameraImageData = document.getElementById('camera-image-data');
+        const previewContainer = document.getElementById('preview-container');
+        const imageUpload = document.getElementById('image-upload');
+        const predictionForm = document.getElementById('prediction-form');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const submitBtn = document.getElementById('submit-btn');
+        
+        let stream = null;
+        let hasCapture = false;
+        
+        // Switch to upload mode
+        uploadBtn.addEventListener('click', function() {
+            uploadArea.style.display = 'block';
+            cameraArea.style.display = 'none';
+            stopCamera();
+        });
+        
+        // Switch to camera mode
+        cameraBtn.addEventListener('click', function() {
+            uploadArea.style.display = 'none';
+            cameraArea.style.display = 'block';
+            startCamera();
+        });
+        
+        // Start camera
+        function startCamera() {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: { ideal: 'environment' },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    } 
+                })
+                .then(function(mediaStream) {
+                    stream = mediaStream;
+                    cameraPreview.srcObject = mediaStream;
+                    cameraPreview.style.display = 'block';
+                    cameraCanvas.style.display = 'none';
+                    captureBtn.style.display = 'inline-block';
+                    retakeBtn.style.display = 'none';
+                    cameraPreview.play();
+                })
+                .catch(function(error) {
+                    console.error('Error accessing camera:', error);
+                    alert('Unable to access camera. Please check permissions or try uploading an image instead.');
+                    uploadBtn.click();
+                });
+            } else {
+                alert('Your browser does not support camera access. Please try uploading an image instead.');
+                uploadBtn.click();
+            }
+        }
+        
+        // Stop camera
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            cameraPreview.style.display = 'none';
+        }
+        
+        // Capture photo
+        captureBtn.addEventListener('click', function() {
+            if (stream) {
+                const context = cameraCanvas.getContext('2d');
+                
+                // Set canvas dimensions to match video
+                cameraCanvas.width = cameraPreview.videoWidth;
+                cameraCanvas.height = cameraPreview.videoHeight;
+                
+                // Draw video frame to canvas
+                context.drawImage(cameraPreview, 0, 0, cameraCanvas.width, cameraCanvas.height);
+                
+                // Convert canvas to data URL
+                const imageData = cameraCanvas.toDataURL('image/jpeg', 0.9);
+                cameraImageData.value = imageData;
+                
+                // Show canvas with captured image
+                cameraPreview.style.display = 'none';
+                cameraCanvas.style.display = 'block';
+                captureBtn.style.display = 'none';
+                retakeBtn.style.display = 'inline-block';
+                
+                hasCapture = true;
+            }
+        });
+        
+        // Retake photo
+        retakeBtn.addEventListener('click', function() {
+            cameraPreview.style.display = 'block';
+            cameraCanvas.style.display = 'none';
+            captureBtn.style.display = 'inline-block';
+            retakeBtn.style.display = 'none';
+            cameraImageData.value = '';
+            hasCapture = false;
+        });
+        
+        // Handle file upload preview
+        imageUpload.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    previewContainer.innerHTML = `<img src="${e.target.result}" class="img-fluid rounded" alt="Preview">`;
+                    previewContainer.style.display = 'block';
+                    cameraImageData.value = '';
+                    hasCapture = false;
+                };
+                
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+        
+        // Form submission
+        predictionForm.addEventListener('submit', function(e) {
+            // Check if we have either a file upload or camera capture
+            if (!imageUpload.files.length && !hasCapture) {
+                e.preventDefault();
+                alert('Please upload an image or take a photo first.');
+                return false;
+            }
+            
+            // Show loading spinner
+            loadingSpinner.style.display = 'block';
+            submitBtn.disabled = true;
+            
+            // If using camera, we need to stop it
+            stopCamera();
+            
+            return true;
+        });
+    });
+</script>
 {% endblock %} 

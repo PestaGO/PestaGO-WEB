@@ -133,6 +133,15 @@ class LeafDiseaseDetector:
         # Process results
         results = {cls: {'count': 0, 'confidences': []} for cls in CLASSES}
         
+        # First, collect all Infected Leaf boxes
+        infected_leaf_boxes = []
+        for box in predictions.boxes:
+            cls = int(box.cls[0].cpu().numpy())
+            class_name = predictions.names[cls]
+            if class_name == 'Infected Leaf':
+                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+                infected_leaf_boxes.append((x1, y1, x2, y2))
+        
         # Draw bounding boxes and collect statistics
         for box in predictions.boxes:
             cls = int(box.cls[0].cpu().numpy())
@@ -142,13 +151,28 @@ class LeafDiseaseDetector:
             # Additional confidence check (redundant with model prediction conf but kept for consistency)
             if conf < CONFIDENCE_THRESHOLD:
                 continue
+            
+            x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
+            
+            # Skip Disease Part detections that are not inside any Infected Leaf
+            if class_name == 'Disease Part':
+                is_inside_infected = False
+                for leaf_x1, leaf_y1, leaf_x2, leaf_y2 in infected_leaf_boxes:
+                    # Check if disease part box center is inside infected leaf box
+                    disease_center_x = (x1 + x2) / 2
+                    disease_center_y = (y1 + y2) / 2
+                    if (leaf_x1 <= disease_center_x <= leaf_x2 and 
+                        leaf_y1 <= disease_center_y <= leaf_y2):
+                        is_inside_infected = True
+                        break
+                if not is_inside_infected:
+                    continue
                 
             if class_name in results:
                 results[class_name]['count'] += 1
                 results[class_name]['confidences'].append(conf)
                 
                 # Draw bounding box
-                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                 cv2.rectangle(img,
                             (int(x1), int(y1)),
                             (int(x2), int(y2)),

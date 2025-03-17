@@ -3,7 +3,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#4CAF50">
     <title>{% block title %}PestaGO{% endblock %}</title>
     
     <!-- Favicon -->
@@ -18,11 +22,118 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{% static 'css/custom.css' %}">
     
+    <style>
+        /* Mobile-specific styles */
+        body {
+            overscroll-behavior: none; /* Prevent pull-to-refresh */
+            -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+            touch-action: manipulation; /* Optimize for touch */
+            padding-bottom: 60px; /* Space for mobile nav */
+        }
+        
+        .mobile-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        
+        .mobile-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #6c757d;
+            text-decoration: none;
+            font-size: 0.8rem;
+        }
+        
+        .mobile-nav-item.active {
+            color: #4CAF50;
+        }
+        
+        .mobile-nav-item i {
+            font-size: 1.2rem;
+            margin-bottom: 4px;
+        }
+        
+        /* Status colors */
+        .healthy-color { color: #28a745; }
+        .infected-color { color: #fd7e14; }
+        .disease-color { color: #dc3545; }
+        
+        .status-healthy-bg {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        
+        .status-infected-bg {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        
+        /* Animation for status */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+        
+        .animate-pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Camera styles */
+        .camera-area {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        #camera-preview, #camera-canvas {
+            border-radius: 8px;
+            max-height: 50vh;
+            object-fit: contain;
+        }
+        
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upload-area:hover {
+            border-color: #4CAF50;
+            background-color: #f8f9fa;
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            color: #4CAF50;
+            margin-bottom: 1rem;
+        }
+        
+        /* Result image */
+        .result-image {
+            max-height: 50vh;
+            object-fit: contain;
+        }
+    </style>
+    
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-success">
         <div class="container">
             <a class="navbar-brand" href="{% url 'home' %}">
                 <i class="fas fa-leaf me-2"></i>PestaGO
@@ -59,12 +170,39 @@
     <!-- Custom JS file -->
     <script src="{% static 'js/custom.js' %}"></script>
     
+    <script>
+        // Initialize Bootstrap tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
+            // Handle image zoom
+            const resultImage = document.querySelector('.result-image');
+            const zoomedImage = document.getElementById('zoomedImage');
+            const imageModal = new bootstrap.Modal(document.getElementById('imageZoomModal'));
+            
+            if (resultImage) {
+                resultImage.addEventListener('click', function() {
+                    zoomedImage.src = this.src;
+                    imageModal.show();
+                });
+            }
+            
+            // Prevent zooming on double tap for mobile
+            document.addEventListener('dblclick', function(e) {
+                e.preventDefault();
+            }, { passive: false });
+        });
+    </script>
+    
     {% block extra_js %}{% endblock %}
 </body>
 
 <!-- Image Zoom Modal -->
 <div class="modal fade" id="imageZoomModal" tabindex="-1" aria-labelledby="imageZoomModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog modal-fullscreen">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="imageZoomModalLabel">Image Detail</h5>
