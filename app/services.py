@@ -99,37 +99,26 @@ class LeafDiseaseDetector:
         return file_path
     
     def predict_image(self, image_path):
-        """Make predictions on an image and return annotated image with results."""
+        """Make predictions on a single image."""
         # Ensure model is loaded
-        self.load_model()
-        
-        # Read and resize image to reduce memory usage
+        if self.model is None:
+            self.load_model()
+            
         img = cv2.imread(image_path)
-        
-        # Resize large images to reduce memory usage
-        h, w = img.shape[:2]
-        max_dim = 1280
-        if max(h, w) > max_dim:
-            scale = max_dim / max(h, w)
-            new_h, new_w = int(h * scale), int(w * scale)
-            img = cv2.resize(img, (new_w, new_h))
-        
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        
-        # Make prediction with optimized settings
-        with torch.no_grad():  # Disable gradient calculation
-            predictions = self.model.predict(
-                source=img,  # Pass the image directly instead of path
-                conf=CONFIDENCE_THRESHOLD,
-                iou=IOU_THRESHOLD,
-                max_det=MAX_DETECTIONS,
-                agnostic_nms=True,
-                verbose=False
-            )[0]
-        
-        # Process results
-        results = {cls: {'count': 0, 'confidences': []} for cls in CLASSES}
-        
+
+        predictions = self.model.predict(
+            source=image_path,
+            conf=CONFIDENCE_THRESHOLD,
+            iou=IOU_THRESHOLD,
+            max_det=MAX_DETECTIONS,
+            agnostic_nms=True,
+            verbose=False
+        )[0]
+
+        """Process predictions."""
+        results = {cls: {'count': 0, 'confidences': [], 'avg_confidence': 0.0} for cls in CLASSES}
+
         # First, collect all Disease Part boxes
         disease_part_boxes = []
         for box in predictions.boxes:
@@ -157,25 +146,25 @@ class LeafDiseaseDetector:
                         break
                 if has_disease_part:
                     valid_infected_leaf_boxes.append((x1, y1, x2, y2))
-        
-        # Draw bounding boxes and collect statistics
+
+        # Process all detections
         for box in predictions.boxes:
             cls = int(box.cls[0].cpu().numpy())
             conf = float(box.conf[0].cpu().numpy())
             class_name = predictions.names[cls]
-            
-            # Additional confidence check
+
+            # Apply stricter confidence threshold (0.6) to filter out low-confidence detections
             if conf < CONFIDENCE_THRESHOLD:
                 continue
-            
+
             x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-            
+
             # Skip Infected Leaf detections that don't contain Disease Parts
             if class_name == 'Infected Leaf':
                 box_coords = (x1, y1, x2, y2)
                 if box_coords not in valid_infected_leaf_boxes:
                     continue
-            
+
             # Skip Disease Part detections that are not inside any valid Infected Leaf
             if class_name == 'Disease Part':
                 is_inside_infected = False
@@ -183,25 +172,24 @@ class LeafDiseaseDetector:
                     # Check if disease part box center is inside infected leaf box
                     disease_center_x = (x1 + x2) / 2
                     disease_center_y = (y1 + y2) / 2
-                    if (leaf_x1 <= disease_center_x <= leaf_x2 and 
+                    if (leaf_x1 <= disease_center_x <= leaf_x2 and
                         leaf_y1 <= disease_center_y <= leaf_y2):
                         is_inside_infected = True
                         break
                 if not is_inside_infected:
                     continue
-            
+
             if class_name in results:
                 results[class_name]['count'] += 1
                 results[class_name]['confidences'].append(conf)
-                
-                # Draw bounding box
+
+                """Draw bounding box and label on image."""
                 cv2.rectangle(img,
                             (int(x1), int(y1)),
                             (int(x2), int(y2)),
                             COLORS[class_name],
                             2)
-                
-                # Draw label
+
                 label = f'{class_name} {conf:.2%}'
                 cv2.putText(img,
                         label,
@@ -210,18 +198,12 @@ class LeafDiseaseDetector:
                         0.5,
                         COLORS[class_name],
                         2)
-        
-        # Calculate average confidences
-        for class_name, data in results.items():
-            if data['count'] > 0:
-                data['avg_confidence'] = sum(data['confidences']) / data['count']
-            else:
-                data['avg_confidence'] = 0.0
-        
-        # Force garbage collection after prediction
-        gc.collect()
-        torch.cuda.empty_cache() if torch.cuda.is_available() else None
-        
+
+        # After processing all detections, calculate average confidence for each class
+        for class_name in CLASSES:
+            if results[class_name]['confidences']:
+                results[class_name]['avg_confidence'] = sum(results[class_name]['confidences']) / len(results[class_name]['confidences'])
+
         return img, results
     
     def get_status(self, results):
