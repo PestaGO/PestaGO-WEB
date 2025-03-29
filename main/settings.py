@@ -97,13 +97,9 @@ if 'DATABASE_URL' in os.environ:
         conn_health_checks=True,
     )
 
-# File upload settings - reduce memory usage
-FILE_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024  # 2MB instead of default 2.5MB
-DATA_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024  # 2MB instead of default 2.5MB
-
 # Session settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.file'  # Use file-based sessions instead of database
-SESSION_COOKIE_AGE = 3600  # 1 hour instead of 2 weeks
+SESSION_COOKIE_AGE = 3600  # 1 hour
 SESSION_SAVE_EVERY_REQUEST = False
 
 # Cache settings

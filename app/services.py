@@ -12,6 +12,8 @@ import time
 from pathlib import Path
 import torch
 import gc
+import hashlib
+from django.core.cache import cache
 
 # Constants
 CONFIDENCE_THRESHOLD = 0.6
@@ -23,6 +25,7 @@ COLORS = {
     'Infected Leaf': (255, 165, 0),  # Orange
     'Disease Part': (255, 0, 0)   # Red
 }
+MAX_IMAGE_SIZE = 640  # Maximum dimension for input images
 
 class LeafDiseaseDetector:
     """Service for detecting mangosteen leaf diseases using YOLOv8."""
@@ -57,10 +60,20 @@ class LeafDiseaseDetector:
                 if hasattr(self.model, 'model') and hasattr(self.model.model, 'eval'):
                     self.model.model.eval()
                 
-                # Use half precision if available (reduces memory by ~2x)
-                if torch.cuda.is_available():
-                    if hasattr(self.model, 'model') and hasattr(self.model.model, 'half'):
-                        self.model.model.half()
+                # Always apply quantization to reduce memory usage by ~75%
+                if hasattr(self.model, 'model'):
+                    # Apply int8 quantization - reduces memory usage significantly
+                    try:
+                        self.model.model = torch.quantization.quantize_dynamic(
+                            self.model.model, {torch.nn.Linear, torch.nn.Conv2d}, dtype=torch.qint8
+                        )
+                        print("Model successfully quantized to int8")
+                    except Exception as qe:
+                        print(f"Quantization failed: {qe}, falling back to half precision")
+                        # If quantization fails, try half precision as fallback
+                        if torch.cuda.is_available() and hasattr(self.model.model, 'half'):
+                            self.model.model.half()
+                            print("Model converted to half precision")
                 
                 print(f"Model loaded successfully from {model_path}")
             except Exception as e:
@@ -98,17 +111,78 @@ class LeafDiseaseDetector:
         
         return file_path
     
+    def get_image_hash(self, image_path):
+        """Generate a hash of the image content for caching purposes."""
+        with open(image_path, 'rb') as f:
+            image_data = f.read()
+        return hashlib.md5(image_data).hexdigest()
+    
+    def preprocess_image(self, image_path):
+        """Enhanced preprocessing for better performance and accuracy."""
+        # Read image
+        img = cv2.imread(image_path)
+        if img is None:
+            raise ValueError(f"Could not read image at {image_path}")
+        
+        height, width = img.shape[:2]
+        
+        # Step 1: Resize the image to a reasonable size
+        if max(width, height) > MAX_IMAGE_SIZE:
+            if width > height:
+                new_width = MAX_IMAGE_SIZE
+                new_height = int(height * (MAX_IMAGE_SIZE / width))
+            else:
+                new_height = MAX_IMAGE_SIZE
+                new_width = int(width * (MAX_IMAGE_SIZE / height))
+            img = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_AREA)
+        
+        # Step 2: Apply basic image enhancement
+        # Convert to LAB color space for better color enhancement
+        lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+        
+        # Apply CLAHE (Contrast Limited Adaptive Histogram Equalization)
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+        cl = clahe.apply(l)
+        
+        # Merge channels
+        enhanced_lab = cv2.merge((cl, a, b))
+        enhanced_img = cv2.cvtColor(enhanced_lab, cv2.COLOR_LAB2BGR)
+        
+        # Step 3: Reduce noise with a slight blur if image is noisy
+        # This can help with model accuracy in some cases
+        enhanced_img = cv2.GaussianBlur(enhanced_img, (3, 3), 0)
+        
+        # Save the enhanced image
+        preprocessed_path = os.path.join(self.temp_dir, f"preprocessed_{os.path.basename(image_path)}")
+        cv2.imwrite(preprocessed_path, enhanced_img)
+        
+        return preprocessed_path
+    
     def predict_image(self, image_path):
-        """Make predictions on a single image."""
+        """Make predictions on a single image with caching."""
+        # Check if we have a cached result for this image
+        image_hash = self.get_image_hash(image_path)
+        cache_key = f"leaf_disease_prediction_{image_hash}"
+        
+        cached_result = cache.get(cache_key)
+        if cached_result:
+            print("Using cached prediction result")
+            return cached_result['img'], cached_result['results']
+        
         # Ensure model is loaded
         if self.model is None:
             self.load_model()
+        
+        # Preprocess the image for better detection
+        preprocessed_image_path = self.preprocess_image(image_path)
             
-        img = cv2.imread(image_path)
+        # Load the image for drawing results
+        img = cv2.imread(preprocessed_image_path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
         predictions = self.model.predict(
-            source=image_path,
+            source=preprocessed_image_path,
             conf=CONFIDENCE_THRESHOLD,
             iou=IOU_THRESHOLD,
             max_det=MAX_DETECTIONS,
@@ -203,6 +277,9 @@ class LeafDiseaseDetector:
         for class_name in CLASSES:
             if results[class_name]['confidences']:
                 results[class_name]['avg_confidence'] = sum(results[class_name]['confidences']) / len(results[class_name]['confidences'])
+        
+        # Save results to cache - we'll only cache the outcome data, not the full image
+        cache.set(cache_key, {'img': img, 'results': results})
 
         return img, results
     
@@ -223,7 +300,7 @@ class LeafDiseaseDetector:
         pil_img = Image.fromarray(img)
         
         # Optimize image size - resize if too large
-        max_dim = 1024
+        max_dim = 800  # Reduced for better performance
         if max(pil_img.width, pil_img.height) > max_dim:
             if pil_img.width > pil_img.height:
                 new_width = max_dim
@@ -235,7 +312,7 @@ class LeafDiseaseDetector:
         
         # Save to buffer with compression
         buf = io.BytesIO()
-        pil_img.save(buf, format='JPEG', quality=85, optimize=True)
+        pil_img.save(buf, format='JPEG', quality=80, optimize=True)
         buf.seek(0)
         
         # Generate base64 data

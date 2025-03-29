@@ -9,6 +9,8 @@ import time
 import base64
 import re
 from datetime import datetime
+import gc
+import torch
 
 from .services import LeafDiseaseDetector
 
@@ -64,19 +66,9 @@ def predict(request):
                         'error': f"Unsupported file format. Please upload a {', '.join(valid_extensions)} file.",
                     })
                 
-                # Validate file size (limit to 5MB)
-                if uploaded_file.size > 5 * 1024 * 1024:
-                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                        return JsonResponse({
-                            'success': False,
-                            'error': "The image file is too large. Please upload an image smaller than 5MB.",
-                        })
-                    return render(request, 'app/home.html', {
-                        'error': "The image file is too large. Please upload an image smaller than 5MB.",
-                    })
-                
-                # Save uploaded image
+                # Save uploaded image - this will handle any file size
                 image_path = detector.save_uploaded_image(uploaded_file)
+                
             else:
                 # Process camera capture
                 # Extract the base64 data from the data URL
@@ -101,8 +93,15 @@ def predict(request):
                 with open(image_path, 'wb') as f:
                     f.write(base64.b64decode(image_data))
             
+            # Start timer to measure processing time
+            start_time = time.time()
+            
             # Make prediction
             img, results = detector.predict_image(image_path)
+            
+            # Calculate processing time
+            processing_time = time.time() - start_time
+            print(f"Image processing completed in {processing_time:.2f} seconds")
             
             # Save result image and get base64 data
             result_path, result_base64 = detector.save_result_image(img, results)
@@ -124,16 +123,20 @@ def predict(request):
                 'healthy_confidence': results['Healthy']['avg_confidence'] * 100 if results['Healthy']['count'] > 0 else 0,
                 'infected_leaf_confidence': results['Infected Leaf']['avg_confidence'] * 100 if results['Infected Leaf']['count'] > 0 else 0,
                 'disease_part_confidence': results['Disease Part']['avg_confidence'] * 100 if results['Disease Part']['count'] > 0 else 0,
+                'processing_time': f"{processing_time:.2f}"
             }
             
             # Store in session
             request.session['prediction_results'] = prediction_result
             
-            # Clean up memory
+            # Free references to large objects to help garbage collection
             img = None
             results = None
-            import gc
+            
+            # Clean up memory
             gc.collect()
+            if hasattr(torch, 'cuda') and torch.cuda.is_available():
+                torch.cuda.empty_cache()
             
             # Return JSON response for AJAX requests
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -144,6 +147,7 @@ def predict(request):
                     'healthy_count': prediction_result['healthy_count'],
                     'infected_leaf_count': prediction_result['infected_leaf_count'],
                     'disease_part_count': prediction_result['disease_part_count'],
+                    'processing_time': prediction_result['processing_time']
                 })
             
             # Redirect to result page for regular form submissions
