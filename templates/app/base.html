@@ -206,17 +206,6 @@
             animation: fadeIn 0.5s ease-out;
         }
 
-        /* Toast notifications */
-        .toast-container {
-            position: fixed;
-            top: 70px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1050;
-            width: 90%;
-            max-width: 350px;
-        }
-
         /* Mobile bottom navigation */
         .mobile-nav {
             position: fixed;
@@ -547,9 +536,6 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Toast container for notifications -->
-    <div class="toast-container"></div>
-    
     <!-- Main Content -->
     <main class="container py-4 page-transition">
         {% block content %}
@@ -928,12 +914,12 @@
                             window.location.href = response.redirect_url;
                         } else {
                             if (formId === 'camera-form') {
-                                showToast('Error', response.error, 'danger');
+                                console.log('Error:', response.error);
                                 $('#camera-error-message').text(response.error).show();
                                 $('#camera-loading-spinner').hide();
                                 $('#camera-submit-btn').prop('disabled', false);
                             } else {
-                                showToast('Error', response.error, 'danger');
+                                console.log('Error:', response.error);
                                 $('#gallery-error-message').text(response.error).show();
                                 $('#gallery-loading-spinner').hide();
                                 $('#gallery-submit-btn').prop('disabled', false);
@@ -942,12 +928,12 @@
                     },
                     error: function(xhr, status, error) {
                         if (formId === 'camera-form') {
-                            showToast('Error', 'An error occurred. Please try again.', 'danger');
+                            console.log('Error:', 'An error occurred. Please try again.');
                             $('#camera-error-message').text('An error occurred. Please try again.').show();
                             $('#camera-loading-spinner').hide();
                             $('#camera-submit-btn').prop('disabled', false);
                         } else {
-                            showToast('Error', 'An error occurred. Please try again.', 'danger');
+                            console.log('Error:', 'An error occurred. Please try again.');
                             $('#gallery-error-message').text('An error occurred. Please try again.').show();
                             $('#gallery-loading-spinner').hide();
                             $('#gallery-submit-btn').prop('disabled', false);
@@ -1043,14 +1029,9 @@
                     
                     navigator.clipboard.writeText(textToCopy).then(() => {
                         // Show success message
-                        if (window.showToast) {
-                            window.showToast('Success', 'Copied to clipboard!', 'success');
-                        }
+                        console.log('Success: Copied to clipboard!');
                     }).catch(err => {
                         console.error('Failed to copy text: ', err);
-                        if (window.showToast) {
-                            window.showToast('Error', 'Failed to copy to clipboard', 'danger');
-                        }
                     });
                 });
             });
@@ -1260,37 +1241,6 @@
                 }
             });
         }
-        
-        // Toast notification function (global)
-        window.showToast = function(title, message, type) {
-            const toastHtml = `
-                <div class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
-                    <div class="d-flex">
-                        <div class="toast-body">
-                            <strong>${title}:</strong> ${message}
-                        </div>
-                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                    </div>
-                </div>
-            `;
-            
-            const toastContainer = document.getElementById('toast-container');
-            if (!toastContainer) {
-                const container = document.createElement('div');
-                container.id = 'toast-container';
-                container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-                container.style.zIndex = '1050';
-                document.body.appendChild(container);
-            }
-            
-            $('#toast-container').append(toastHtml);
-            const toastElement = $('.toast').last();
-            const toast = new bootstrap.Toast(toastElement, {
-                autohide: true,
-                delay: 5000
-            });
-            toast.show();
-        };
     </script>
     
     {% block extra_js %}{% endblock %}
