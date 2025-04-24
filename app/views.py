@@ -20,7 +20,29 @@ def home(request):
     if 'prediction_results' in request.session:
         del request.session['prediction_results']
     
-    return render(request, 'app/home.html')
+    # Check which section to display based on URL hash or AJAX request
+    section = request.GET.get('section', 'home')
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    # Set the appropriate template based on the section
+    if is_ajax:
+        if section == 'gallery':
+            return render(request, 'app/sections/gallery.html')
+        elif section == 'camera':
+            return render(request, 'app/sections/camera.html')
+        elif section == 'about':
+            return render(request, 'app/sections/about.html')
+        else:
+            return render(request, 'app/sections/home.html')
+    
+    # For non-AJAX requests, render the full page with all sections
+    # The JavaScript will handle showing/hiding sections based on the hash
+    context = {
+        'active_section': section,
+        'cache_timestamp': datetime.now().timestamp()  # For cache busting when needed
+    }
+    
+    return render(request, 'app/base.html', context)
 
 @csrf_exempt
 def predict(request):
@@ -41,8 +63,9 @@ def predict(request):
                     'success': False,
                     'error': "No image provided. Please upload an image or take a photo.",
                 })
-            return render(request, 'app/home.html', {
+            return render(request, 'app/base.html', {
                 'error': "No image provided. Please upload an image or take a photo.",
+                'active_section': 'gallery'
             })
         
         try:
@@ -62,8 +85,9 @@ def predict(request):
                             'success': False,
                             'error': f"Unsupported file format. Please upload a {', '.join(valid_extensions)} file.",
                         })
-                    return render(request, 'app/home.html', {
+                    return render(request, 'app/base.html', {
                         'error': f"Unsupported file format. Please upload a {', '.join(valid_extensions)} file.",
+                        'active_section': 'gallery'
                     })
                 
                 # Save uploaded image - this will handle any file size
@@ -79,8 +103,9 @@ def predict(request):
                             'success': False,
                             'error': "Invalid camera image data.",
                         })
-                    return render(request, 'app/home.html', {
+                    return render(request, 'app/base.html', {
                         'error': "Invalid camera image data.",
+                        'active_section': 'gallery'
                     })
                 
                 # Extract the base64 data
@@ -160,8 +185,9 @@ def predict(request):
                     'error': str(e),
                 })
             
-            return render(request, 'app/home.html', {
+            return render(request, 'app/base.html', {
                 'error': f"Error processing image: {str(e)}",
+                'active_section': 'gallery'
             })
     
     # Redirect to home for GET requests
@@ -177,6 +203,7 @@ def result(request):
     
     return render(request, 'app/result.html', {
         'prediction': prediction_results,
+        'active_section': None  # Explicitly set no active section for result page
     })
 
 def serve_image(request, image_type):

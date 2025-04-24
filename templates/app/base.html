@@ -11,7 +11,7 @@
     <title>{% block title %}PestaGO{% endblock %}</title>
     
     <!-- Favicon -->
-    <link rel="icon" href="{% static 'img/icon.svg' %}">
+    <link rel="icon" href="{% static 'icon.svg' %}">
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -19,8 +19,530 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{% static 'css/custom.css' %}">
+    <style>
+        /* Root variables */
+        :root {
+            --primary-color: #2e7d32;
+            --secondary-color: #4caf50;
+            --accent-color: #8bc34a;
+            --danger-color: #f44336;
+            --warning-color: #ff9800;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+        }
+
+        /* Base styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            max-width: 100%;
+            overflow-x: hidden;
+            padding-bottom: 70px; /* Space for bottom navigation */
+            overscroll-behavior: none; /* Prevent pull-to-refresh */
+            -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+            touch-action: manipulation; /* Optimize for touch */
+            background-color: #f8f9fa;
+        }
+
+        /* Animation for cards */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4caf50;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #2e7d32;
+        }
+
+        /* Navbar styles */
+        .navbar {
+            background-color: var(--primary-color);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: white !important;
+            font-size: 1.2rem;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.85) !important;
+            font-weight: 500;
+            transition: color 0.3s;
+            padding: 0.75rem 1rem;
+        }
+
+        .nav-link:hover {
+            color: white !important;
+        }
+
+        /* Card styles */
+        .card {
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            overflow: hidden;
+            margin-bottom: 20px;
+            border: none;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            padding: 15px 20px;
+            font-weight: 600;
+            border-bottom: none;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        /* Button styles */
+        .btn {
+            border-radius: 50px;
+            padding: 10px 20px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 6px rgba(46, 125, 50, 0.2);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(46, 125, 50, 0.3);
+        }
+
+        .btn-outline-primary {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-outline-primary:hover {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        /* Status styles */
+        .status-healthy {
+            color: var(--secondary-color);
+        }
+
+        .status-infected {
+            color: var(--danger-color);
+        }
+
+        .disease-color {
+            color: var(--danger-color);
+        }
+
+        /* Status colors */
+        .healthy-color { color: #28a745; }
+        .infected-color { color: #fd7e14; }
+        .disease-color { color: #dc3545; }
+
+        .status-healthy-bg {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+
+        .status-infected-bg {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+
+        /* Animation for status */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        .animate-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        /* Page transitions */
+        .page-transition {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1050;
+            width: 90%;
+            max-width: 350px;
+        }
+
+        /* Mobile bottom navigation */
+        .mobile-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: white;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            z-index: 1000;
+        }
+
+        .mobile-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #777;
+            text-decoration: none;
+            font-size: 0.8rem;
+            transition: color 0.3s;
+        }
+
+        .mobile-nav-item.active {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .mobile-nav-item.active i {
+            transform: scale(1.2);
+        }
+
+        .mobile-nav-item i {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        #camera-preview, #camera-canvas {
+            border-radius: 8px;
+            max-height: 50vh;
+            object-fit: contain;
+        }
+
+        /* Enhanced upload area */
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            transition: border-color 0.3s, padding 0.3s;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(139, 195, 74, 0.1) 100%);
+            z-index: -1;
+            border-radius: 8px;
+        }
+
+        .upload-area-small {
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            transform: scale(1.02);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #6c757d;
+            margin-bottom: 1rem;
+            transition: font-size 0.3s ease;
+        }
+
+        .upload-icon-small {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Pulsing upload icon */
+        .upload-icon i {
+            animation: pulse 2s infinite;
+        }
+
+        /* Result image */
+        .result-image {
+            max-height: 50vh;
+            object-fit: contain;
+        }
+
+        /* Logo styles */
+        .logo-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            position: relative;
+        }
+
+        .logo-img {
+            width: 200px;
+            height: auto;
+            display: block;
+            margin: 0 auto 1.5rem auto;
+            animation: pulse 3s infinite;
+        }
+
+        .header-icon {
+            height: 40px;
+            width: auto;
+            vertical-align: middle;
+        }
+
+        .logo-text {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #333;
+            line-height: 1.2;
+        }
+
+        /* Section container */
+        .section-container {
+            display: none;
+        }
+
+        .section-container.active {
+            display: block;
+        }
+
+        /* Preview container */
+        .preview-container {
+            max-width: 100%;
+            max-height: 300px;
+            overflow: hidden;
+            margin: 1rem auto;
+            text-align: center;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .preview-container img {
+            max-width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+
+        /* Loading spinner */
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            margin: 1rem 0;
+            transition: all 0.3s ease;
+        }
+
+        /* Result container */
+        .result-container {
+            margin-top: 2rem;
+        }
+
+        .result-image {
+            max-width: 100%;
+            border-radius: 16px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1) !important;
+            transition: transform 0.3s ease;
+        }
+
+        .result-image:hover {
+            transform: scale(1.02);
+        }
+
+        /* Stats container */
+        .stats-container {
+            background-color: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-item {
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .stat-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        /* Status badges */
+        .badge {
+            padding: 0.5em 0.8em;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        /* Utility classes */
+        .cursor-pointer {
+            cursor: pointer;
+        }
+
+        .text-primary {
+            color: var(--primary-color) !important;
+        }
+
+        /* Bottom navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: white;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            z-index: 1000;
+        }
+
+        /* Footer enhancements */
+        .footer {
+            background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+        }
+
+        /* Mobile-specific adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding-left: 15px;
+                padding-right: 15px;
+            }
+            
+            .card {
+                margin-left: -5px;
+                margin-right: -5px;
+                width: calc(100% + 10px);
+            }
+            
+            .navbar-brand {
+                font-size: 1.1rem;
+            }
+            
+            .btn {
+                padding: 8px 16px;
+                font-size: 0.9rem;
+            }
+            
+            .upload-area {
+                padding: 1.5rem;
+            }
+            
+            .upload-icon {
+                font-size: 2.5rem;
+            }
+            
+            h2.card-title {
+                font-size: 1.5rem;
+            }
+            
+            .lead {
+                font-size: 1rem;
+            }
+            
+            .navbar-toggler {
+                display: none;
+            }
+            
+            .navbar-collapse {
+                display: none !important;
+            }
+            
+            .navbar {
+                padding: 10px 15px;
+            }
+            
+            .card-title {
+                font-size: 1.25rem;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            .navbar, .footer, .btn, .mobile-nav {
+                display: none;
+            }
+            
+            .card {
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+            
+            .container {
+                width: 100%;
+                max-width: 100%;
+            }
+            
+            body {
+                padding-bottom: 0;
+            }
+        }
+    </style>
     
     {% block extra_css %}{% endblock %}
 </head>
@@ -30,20 +552,50 @@
     
     <!-- Main Content -->
     <main class="container py-4 page-transition">
-        {% block content %}{% endblock %}
+        {% block content %}
+        <div class="row">
+            <div class="col-12 col-lg-8 mx-auto">
+                <!-- Content area where sections will be loaded dynamically -->
+                <div id="content-area" 
+                     data-active-section="{{ active_section|default:'home' }}"
+                     data-cache-timestamp="{{ cache_timestamp }}">
+                    <!-- Initially load with the active section or home by default -->
+                    <div id="home" class="section-container {% if active_section == 'home' or not active_section %}active{% endif %}">
+                        <!-- Home content loaded via AJAX from sections/home.html -->
+                    </div>
+                    
+                    <div id="gallery" class="section-container {% if active_section == 'gallery' %}active{% endif %}">
+                        <!-- Gallery content loaded via AJAX from sections/gallery.html -->
+                    </div>
+                    
+                    <div id="camera" class="section-container {% if active_section == 'camera' %}active{% endif %}">
+                        <!-- Camera content loaded via AJAX from sections/camera.html -->
+                    </div>
+                    
+                    <div id="about" class="section-container {% if active_section == 'about' %}active{% endif %}">
+                        <!-- About content loaded via AJAX from sections/about.html -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endblock %}
     </main>
     
     <!-- Mobile Bottom Navigation -->
     <div class="mobile-nav">
-        <a href="{% url 'home' %}" id="gallery-btn" class="mobile-nav-item">
+        <a href="{% url 'home' %}#home" id="home-btn" class="mobile-nav-item {% if request.resolver_match.url_name == 'home' and active_section == 'home' %}active{% endif %}">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="{% url 'home' %}#gallery" id="gallery-btn" class="mobile-nav-item {% if active_section == 'gallery' %}active{% endif %}">
             <i class="fas fa-images"></i>
             <span>Gallery</span>
         </a>
-        <a href="{% url 'home' %}#camera-section" id="camera-btn" class="mobile-nav-item">
+        <a href="{% url 'home' %}#camera" id="camera-btn" class="mobile-nav-item {% if active_section == 'camera' %}active{% endif %}">
             <i class="fas fa-camera"></i>
             <span>Camera</span>
         </a>
-        <a href="{% url 'home' %}#about-section" id="about-btn" class="mobile-nav-item">
+        <a href="{% url 'home' %}#about" id="about-btn" class="mobile-nav-item {% if active_section == 'about' %}active{% endif %}">
             <i class="fas fa-info-circle"></i>
             <span>About</span>
         </a>
@@ -55,13 +607,674 @@
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
-    <!-- Add homeUrl for JavaScript -->
+    <!-- Main JavaScript -->
     <script>
+        // homeUrl variable for use in scripts
         const homeUrl = "{% url 'home' %}";
+        
+        // Track loaded sections to avoid reloading
+        const loadedSections = {
+            'home': false,
+            'gallery': false,
+            'camera': false,
+            'about': false
+        };
+        
+        // Get data attributes from content area
+        const contentArea = document.getElementById('content-area');
+        const activeSection = contentArea ? (contentArea.dataset.activeSection || 'home') : 'home';
+        const cacheTimestamp = contentArea ? contentArea.dataset.cacheTimestamp : '';
+        
+        // Handle navigation
+        function navigateToSection(section) {
+            // Hide all sections
+            $('.section-container').hide();
+            
+            // Show the target section
+            $(`#${section}`).show();
+            
+            // Load content if not already loaded
+            if (!loadedSections[section]) {
+                loadSectionContent(section);
+            }
+            
+            // Update active button state
+            $('.mobile-nav-item').removeClass('active');
+            $(`#${section}-btn`).addClass('active');
+            
+            // Update URL hash without triggering another navigation
+            history.replaceState(null, null, `${homeUrl}#${section}`);
+        }
+        
+        // Load section content via AJAX
+        function loadSectionContent(section) {
+            const sectionElement = $(`#${section}`);
+            
+            // If already loaded, just show the section
+            if (loadedSections[section]) {
+                return;
+            }
+            
+            // Show loading indicator
+            sectionElement.html('<div class="text-center p-5"><div class="spinner-border text-primary" role="status"></div><p class="mt-3">Loading...</p></div>');
+            
+            // Fetch section content
+            $.ajax({
+                url: `${homeUrl}?section=${section}`,
+                type: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(data) {
+                    sectionElement.html(data);
+                    loadedSections[section] = true;
+                    
+                    // Initialize any section-specific scripts
+                    if (section === 'camera') {
+                        initCamera();
+                    } else if (section === 'gallery') {
+                        initGallery();
+                    }
+                },
+                error: function() {
+                    sectionElement.html('<div class="alert alert-danger">Failed to load content. Please try again.</div>');
+                }
+            });
+        }
+        
+        // Custom JavaScript for Mangosteen Leaf Disease Detection
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize tooltips
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function(tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
+            // Initialize popovers
+            const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+            popoverTriggerList.map(function(popoverTriggerEl) {
+                return new bootstrap.Popover(popoverTriggerEl);
+            });
+            
+            // Add smooth scrolling to all links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const targetId = this.getAttribute('href');
+                    if (targetId === '#') return;
+                    
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+            
+            // Ensure logo container is visible on page load
+            showSection('logo-container');
+            
+            // Prevent zooming on double tap for mobile
+            document.addEventListener('dblclick', function(e) {
+                e.preventDefault();
+            }, { passive: false });
+            
+            // Set active navigation item
+            function setActiveNavItem(itemId) {
+                document.querySelectorAll('.mobile-nav-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                document.getElementById(itemId).classList.add('active');
+            }
+            
+            // Show section and hide others
+            function showSection(sectionId) {
+                // Hide all sections
+                const sections = ['logo-container', 'gallery-section', 'about-section', 'camera-section'];
+                sections.forEach(section => {
+                    const element = document.getElementById(section);
+                    if (element) {
+                        element.style.display = 'none';
+                    }
+                });
+                
+                // Show the selected section
+                const selectedSection = document.getElementById(sectionId);
+                if (selectedSection) {
+                    selectedSection.style.display = 'block';
+                }
+                
+                // Ensure the logo container is completely hidden when showing other sections
+                if (sectionId !== 'logo-container') {
+                    const logoContainer = document.getElementById('logo-container');
+                    if (logoContainer) {
+                        logoContainer.style.display = 'none';
+                        logoContainer.style.visibility = 'hidden';
+                        logoContainer.style.position = 'absolute';
+                        logoContainer.style.zIndex = '-1';
+                    }
+                }
+            }
+            
+            // Camera and image handling functionality
+            const logoContainer = document.getElementById('logo-container');
+            const gallerySection = document.getElementById('gallery-section');
+            const aboutSection = document.getElementById('about-section');
+            const cameraSection = document.getElementById('camera-section');
+            const cameraPreview = document.getElementById('camera-preview');
+            const cameraCanvas = document.getElementById('camera-canvas');
+            const captureBtn = document.getElementById('capture-btn');
+            const retakeBtn = document.getElementById('retake-btn');
+            const cameraImageData = document.getElementById('camera-image-data');
+            const previewContainer = document.getElementById('preview-container');
+            const previewImage = document.getElementById('preview-image');
+            const imageUpload = document.getElementById('image-upload');
+            
+            let stream = null;
+            let hasCapture = false;
+            
+            // Camera button click handler
+            const cameraBtn = document.getElementById('camera-btn');
+            if (cameraBtn) {
+                cameraBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    if (gallerySection) {
+                        // Show gallery section (which contains the camera area)
+                        showSection('gallery-section');
+                        
+                        // Show camera section
+                        document.getElementById('camera-section').style.display = 'block';
+                        previewContainer.style.display = 'none';
+                        
+                        // Camera will be initialized by initCamera when loaded
+                    } else {
+                        // Navigate to home page if we're not already there
+                        window.location.href = homeUrl + "#camera";
+                    }
+                    
+                    // Update active state
+                    setActiveNavItem('camera-btn');
+                });
+            }
+            
+            // Gallery button click handler
+            const galleryBtn = document.getElementById('gallery-btn');
+            if (galleryBtn) {
+                galleryBtn.addEventListener('click', function(e) {
+                    // If we're not on the home page, let the default navigation happen
+                    if (window.location.pathname !== '/') {
+                        return;
+                    }
+                    
+                    e.preventDefault();
+                    
+                    // Show gallery section instead of triggering file input
+                    showSection('gallery-section');
+                    
+                    // Update active state
+                    setActiveNavItem('gallery-btn');
+                });
+            }
+            
+            // About button click handler
+            const aboutBtn = document.getElementById('about-btn');
+            if (aboutBtn) {
+                aboutBtn.addEventListener('click', function(e) {
+                    // If we're not on the home page, let the default navigation happen
+                    if (window.location.pathname !== '/') {
+                        return;
+                    }
+                    
+                    e.preventDefault();
+                    
+                    // Show about section
+                    showSection('about-section');
+                    
+                    // Update active state
+                    setActiveNavItem('about-btn');
+                });
+            }
+            
+            // Image upload change handler
+            if (imageUpload) {
+                imageUpload.addEventListener('change', function() {
+                    if (this.files && this.files[0]) {
+                        const reader = new FileReader();
+                        
+                        reader.onload = function(e) {
+                            // Show gallery section
+                            showSection('gallery-section');
+                            
+                            // Hide camera section, show preview
+                            if (cameraSection) cameraSection.style.display = 'none';
+                            previewImage.src = e.target.result;
+                            previewContainer.style.display = 'block';
+                            $('#gallery-submit-container').show();
+                            
+                            // Reset camera data
+                            cameraImageData.value = '';
+                            hasCapture = false;
+                            
+                            // Update active state
+                            setActiveNavItem('gallery-btn');
+                        };
+                        
+                        reader.readAsDataURL(this.files[0]);
+                    } else {
+                        // User canceled file selection
+                        // Keep showing the logo container
+                        showSection('logo-container');
+                    }
+                });
+            }
+            
+            // Stop camera
+            function stopCamera() {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    stream = null;
+                }
+                if (cameraPreview) cameraPreview.style.display = 'none';
+            }
+            
+            // Form submission with AJAX
+            $('.prediction-form').submit(function(e) {
+                e.preventDefault();
+                
+                // Check if we have either a file upload or camera capture
+                const thisForm = $(this);
+                const formId = thisForm.attr('id');
+                const isCamera = formId === 'camera-form';
+                const errorMsgSelector = isCamera ? '#camera-error-message' : '#gallery-error-message';
+                const loadingSpinnerSelector = isCamera ? '#camera-loading-spinner' : '#gallery-loading-spinner';
+                const submitBtnSelector = isCamera ? '#camera-submit-btn' : '#gallery-submit-btn';
+                
+                if (formId === 'camera-form' && !hasCapture) {
+                    alert('Please take a photo first.');
+                    return false;
+                } else if (formId === 'gallery-form' && !$('#image-upload')[0].files.length) {
+                    alert('Please select an image first.');
+                    return false;
+                }
+                
+                // Get form data
+                const formData = new FormData(this);
+                
+                // Show loading spinner
+                $(loadingSpinnerSelector).show();
+                $(submitBtnSelector).prop('disabled', true);
+                
+                // If using camera, ensure it's stopped
+                stopCamera();
+                
+                $.ajax({
+                    url: $(this).attr('action'),
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            window.location.href = response.redirect_url;
+                        } else {
+                            showToast('Error', response.error, 'danger');
+                            $(errorMsgSelector).text(response.error).show();
+                            $(loadingSpinnerSelector).hide();
+                            $(submitBtnSelector).prop('disabled', false);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        showToast('Error', 'An error occurred. Please try again.', 'danger');
+                        $(errorMsgSelector).text('An error occurred. Please try again.').show();
+                        $(loadingSpinnerSelector).hide();
+                        $(submitBtnSelector).prop('disabled', false);
+                    }
+                });
+            });
+        });
+
+        // Initialize page
+        $(document).ready(function() {
+            // Add animation class to cards
+            $('.card').addClass('animate-fade-in');
+
+            // Check if we're on a non-section page (like results)
+            const onSectionPage = document.getElementById('content-area') !== null;
+            
+            if (onSectionPage) {
+                // Check URL hash for direct navigation
+                const hash = window.location.hash.substring(1);
+                if (hash && ['home', 'gallery', 'camera', 'about'].includes(hash)) {
+                    navigateToSection(hash);
+                } else {
+                    // Default to home when no hash is present
+                    navigateToSection('home');
+                    // Update URL to include #home
+                    history.replaceState(null, null, `${homeUrl}#home`);
+                }
+                
+                // Handle bottom navigation clicks for section pages
+                $('.mobile-nav-item').click(function(e) {
+                    e.preventDefault();
+                    const sectionId = this.id.replace('-btn', '');
+                    navigateToSection(sectionId);
+                });
+                
+                // Load all sections at startup
+                ['home', 'gallery', 'camera', 'about'].forEach(section => {
+                    if (!loadedSections[section]) {
+                        loadSectionContent(section);
+                    }
+                });
+            } else {
+                // On a non-section page (like results), ensure no navigation button is active
+                $('.mobile-nav-item').removeClass('active');
+                
+                // Handle navigation clicks for non-section pages
+                $('.mobile-nav-item').click(function(e) {
+                    const sectionId = this.id.replace('-btn', '');
+                    if (sectionId === 'camera') {
+                        // For camera, we need to ensure the section is loaded
+                        e.preventDefault();
+                        window.location.href = `${homeUrl}#camera`;
+                    }
+                    // For other sections, allow normal navigation
+                });
+            }
+            
+            // Image zoom functionality for result images
+            const resultImages = document.querySelectorAll('.result-image');
+            resultImages.forEach(img => {
+                // Remove any existing click listeners first
+                img.replaceWith(img.cloneNode(true));
+            });
+            
+            // Re-select the images after replacing them (to clear event listeners)
+            document.querySelectorAll('.result-image').forEach(img => {
+                img.addEventListener('click', function() {
+                    if (document.getElementById('imageZoomModal')) {
+                        const zoomedImage = document.getElementById('zoomedImage');
+                        zoomedImage.src = this.src;
+                        
+                        const modalElement = document.getElementById('imageZoomModal');
+                        const modal = new bootstrap.Modal(modalElement);
+                        modal.show();
+                        
+                        // Clean up when modal is hidden
+                        $(modalElement).one('hidden.bs.modal', function() {
+                            zoomedImage.src = '';
+                        });
+                    }
+                });
+            });
+            
+            // Copy to clipboard functionality
+            const copyButtons = document.querySelectorAll('.btn-copy');
+            copyButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const textToCopy = this.getAttribute('data-copy-text');
+                    if (!textToCopy) return;
+                    
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        // Show success message
+                        if (window.showToast) {
+                            window.showToast('Success', 'Copied to clipboard!', 'success');
+                        }
+                    }).catch(err => {
+                        console.error('Failed to copy text: ', err);
+                        if (window.showToast) {
+                            window.showToast('Error', 'Failed to copy to clipboard', 'danger');
+                        }
+                    });
+                });
+            });
+            
+            // Drag and drop functionality
+            const uploadArea = document.getElementById('upload-area');
+            if (uploadArea) {
+                const fileInput = document.getElementById('image-upload');
+                
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, preventDefaults, false);
+                });
+                
+                function preventDefaults(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, highlight, false);
+                });
+                
+                ['dragleave', 'drop'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, unhighlight, false);
+                });
+                
+                function highlight() {
+                    uploadArea.classList.add('border-primary');
+                }
+                
+                function unhighlight() {
+                    uploadArea.classList.remove('border-primary');
+                }
+                
+                uploadArea.addEventListener('drop', handleDrop, false);
+                
+                function handleDrop(e) {
+                    const dt = e.dataTransfer;
+                    const files = dt.files;
+                    fileInput.files = files;
+                    
+                    // Trigger change event
+                    const event = new Event('change');
+                    fileInput.dispatchEvent(event);
+                }
+            }
+            
+            // Form validation enhancement
+            const forms = document.querySelectorAll('.needs-validation');
+            Array.from(forms).forEach(form => {
+                form.addEventListener('submit', event => {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    
+                    form.classList.add('was-validated');
+                }, false);
+            });
+            
+            // Dark mode toggle
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            if (darkModeToggle) {
+                // Check for saved theme preference or use preferred color scheme
+                const savedTheme = localStorage.getItem('theme');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                
+                if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                    document.body.classList.add('dark-mode');
+                    darkModeToggle.checked = true;
+                }
+                
+                // Toggle dark mode
+                darkModeToggle.addEventListener('change', function() {
+                    if (this.checked) {
+                        document.body.classList.add('dark-mode');
+                        localStorage.setItem('theme', 'dark');
+                    } else {
+                        document.body.classList.remove('dark-mode');
+                        localStorage.setItem('theme', 'light');
+                    }
+                });
+            }
+        });
+        
+        // Camera initialization function
+        function initCamera() {
+            $('#start-camera-btn').on('click', function() {
+                // Camera initialization code
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    navigator.mediaDevices.getUserMedia({ 
+                        video: { 
+                            facingMode: "environment",
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        } 
+                    })
+                        .then(function(mediaStream) {
+                            // Store stream globally for later cleanup
+                            stream = mediaStream;
+                            
+                            const video = document.getElementById('camera-preview');
+                            video.srcObject = mediaStream;
+                            video.style.display = 'block';
+                            video.play();
+                            
+                            // Show capture button, hide start button
+                            $('#start-camera-btn').hide();
+                            $('#capture-btn').show();
+                            $('#camera-canvas').hide();
+                            $('#camera-submit-container').hide();
+                        })
+                        .catch(function(error) {
+                            console.error("Camera error:", error);
+                            $('#camera-error-message').text("Could not access camera. Please check permissions.").show();
+                        });
+                } else {
+                    $('#camera-error-message').text("Your browser doesn't support camera access.").show();
+                }
+            });
+            
+            // Add capture functionality
+            $('#capture-btn').on('click', function() {
+                const video = document.getElementById('camera-preview');
+                const canvas = document.getElementById('camera-canvas');
+                
+                // Set canvas dimensions to match video
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                // Draw video frame to canvas
+                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Convert canvas to data URL
+                const imageData = canvas.toDataURL('image/jpeg');
+                
+                // Set hidden input value
+                document.getElementById('camera-image-data').value = imageData;
+                
+                // Show canvas, hide video
+                video.style.display = 'none';
+                canvas.style.display = 'block';
+                
+                // Show retake button, hide capture button
+                $('#capture-btn').hide();
+                $('#retake-btn').show();
+                
+                // Show submit button
+                $('#camera-submit-container').show();
+                
+                // Set hasCapture flag
+                hasCapture = true;
+            });
+            
+            // Add retake functionality
+            $('#retake-btn').on('click', function() {
+                const video = document.getElementById('camera-preview');
+                const canvas = document.getElementById('camera-canvas');
+                
+                // Show video, hide canvas
+                video.style.display = 'block';
+                canvas.style.display = 'none';
+                
+                // Show capture button, hide retake button
+                $('#capture-btn').show();
+                $('#retake-btn').hide();
+                
+                // Hide submit button
+                $('#camera-submit-container').hide();
+                
+                // Clear hidden input
+                document.getElementById('camera-image-data').value = '';
+                
+                // Reset hasCapture flag
+                hasCapture = false;
+            });
+        }
+        
+        // Gallery initialization function
+        function initGallery() {
+            // Image upload preview
+            $('#image-upload').change(function() {
+                const file = this.files[0];
+                if (file) {
+                    // Shrink the upload area if it exists
+                    if ($('#upload-area').length) {
+                        $('#upload-area').addClass('upload-area-small');
+                        $('#upload-area h4').text('Change Image');
+                        $('#upload-area p').hide();
+                        $('#upload-area .upload-icon').addClass('upload-icon-small');
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        // Update preview image if it exists
+                        if ($('#preview-image').length) {
+                            $('#preview-image').attr('src', e.target.result);
+                        } else {
+                            // Otherwise create new image in preview container
+                            $('#preview-container').html('<img src="' + e.target.result + '" class="img-fluid rounded" />');
+                        }
+                        
+                        $('#preview-container').show();
+                        $('#gallery-submit-container').show();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+        
+        // Toast notification function (global)
+        window.showToast = function(title, message, type) {
+            const toastHtml = `
+                <div class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <strong>${title}:</strong> ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            
+            const toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                const container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+                container.style.zIndex = '1050';
+                document.body.appendChild(container);
+            }
+            
+            $('#toast-container').append(toastHtml);
+            const toastElement = $('.toast').last();
+            const toast = new bootstrap.Toast(toastElement, {
+                autohide: true,
+                delay: 5000
+            });
+            toast.show();
+        };
     </script>
-    
-    <!-- Custom JS file -->
-    <script src="{% static 'js/custom.js' %}"></script>
     
     {% block extra_js %}{% endblock %}
 </body>

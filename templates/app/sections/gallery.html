@@ -1,0 +1,61 @@
+{% load static %}
+<!-- Gallery Section -->
+<div class="card">
+    <div class="card-body">
+        <div class="text-center d-flex flex-column align-items-center justify-content-center" style="min-height: 150px;">
+            <h2 class="card-title mb-3" style="font-size: 2.5rem; display: flex; align-items: center; justify-content: center;">
+                <img src="{% static 'img/icon.svg' %}" alt="PestaGO" class="header-icon" style="height: 60px; margin-right: 15px; vertical-align: middle;">
+                <span style="vertical-align: middle;">Upload Image</span>
+            </h2>
+            
+            <p class="text-muted" style="font-size: 1.2rem;">
+                Select an image from your device
+            </p>
+        </div>
+        
+        <div class="alert alert-danger" id="gallery-error-message" style="display: {% if error %}block{% else %}none{% endif %};">
+            {% if error %}{{ error }}{% endif %}
+        </div>
+        
+        <div class="row justify-content-center mb-4">
+            <div class="col-12 col-md-10 col-lg-8">
+                <form method="post" action="{% url 'predict' %}" enctype="multipart/form-data" id="gallery-form" class="prediction-form">
+                    {% csrf_token %}
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <!-- Hidden file input for gallery selection -->
+                            <input type="file" name="image" id="image-upload" accept=".jpg,.jpeg,.png" class="d-none" capture="environment">
+                            
+                            <!-- Gallery Upload Button -->
+                            <div class="text-center p-4">
+                                <button type="button" class="btn btn-lg btn-primary gallery-upload-btn" onclick="document.getElementById('image-upload').click();">
+                                    <i class="fas fa-image me-2"></i>Select Image
+                                </button>
+                            </div>
+                            
+                            <!-- Preview Container -->
+                            <div id="preview-container" class="text-center mb-3" style="display: none;">
+                                <img id="preview-image" class="img-fluid rounded" alt="Preview">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Loading Spinner -->
+                    <div class="loading-spinner text-center my-3" id="gallery-loading-spinner" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Analyzing your leaf image...</p>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <div class="text-center mt-4" id="gallery-submit-container" style="display: none;">
+                        <button type="submit" class="btn btn-primary btn-lg px-4" id="gallery-submit-btn">
+                            <i class="fas fa-microscope me-2"></i>Analyze Leaf
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div> 

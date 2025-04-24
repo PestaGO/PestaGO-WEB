@@ -1,0 +1,64 @@
+{% load static %}
+<!-- Camera Section -->
+<div class="card">
+    <div class="card-body">
+        <div class="text-center d-flex flex-column align-items-center justify-content-center" style="min-height: 150px;">
+            <h2 class="card-title mb-3" style="font-size: 2.5rem; display: flex; align-items: center; justify-content: center;">
+                <img src="{% static 'img/icon.svg' %}" alt="PestaGO" class="header-icon" style="height: 60px; margin-right: 15px; vertical-align: middle;">
+                <span style="vertical-align: middle;">Take Photo</span>
+            </h2>
+            
+            <p class="text-muted" style="font-size: 1.2rem;">
+                Use your camera to capture a leaf image
+            </p>
+        </div>
+        
+        <div class="alert alert-danger" id="camera-error-message" style="display: {% if error %}block{% else %}none{% endif %};">
+            {% if error %}{{ error }}{% endif %}
+        </div>
+        
+        <div class="row justify-content-center mb-4">
+            <div class="col-12 col-md-10 col-lg-8">
+                <form method="post" action="{% url 'predict' %}" enctype="multipart/form-data" id="camera-form" class="prediction-form">
+                    {% csrf_token %}
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <!-- Camera Capture Area -->
+                            <div class="text-center p-4">
+                                <video id="camera-preview" class="w-100 rounded" style="display: none;"></video>
+                                <canvas id="camera-canvas" class="w-100 rounded" style="display: none;"></canvas>
+                                <button type="button" class="btn btn-lg btn-primary me-2" id="start-camera-btn">
+                                    <i class="fas fa-video me-2"></i>Open Camera
+                                </button>
+                                <button type="button" class="btn btn-primary me-2 mt-3" id="capture-btn" style="display: none;">
+                                    <i class="fas fa-camera me-2"></i>Capture
+                                </button>
+                                <button type="button" class="btn btn-secondary mt-3" id="retake-btn" style="display: none;">
+                                    <i class="fas fa-redo me-2"></i>Retake
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Hidden input for camera captured image -->
+                    <input type="hidden" name="camera_image" id="camera-image-data">
+                    
+                    <!-- Loading Spinner -->
+                    <div class="loading-spinner text-center my-3" id="camera-loading-spinner" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Analyzing your leaf image...</p>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <div class="text-center mt-4" id="camera-submit-container" style="display: none;">
+                        <button type="submit" class="btn btn-primary btn-lg px-4" id="camera-submit-btn">
+                            <i class="fas fa-microscope me-2"></i>Analyze Leaf
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div> 

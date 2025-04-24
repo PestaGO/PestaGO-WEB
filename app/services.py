@@ -265,13 +265,42 @@ class LeafDiseaseDetector:
                             2)
 
                 label = f'{class_name} {conf:.2%}'
+                
+                # Reduce font size
+                font_size = 0.75
+                thickness = 2
+                
+                # Get text size for background rectangle
+                text_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, font_size, thickness)[0]
+                
+                # Add padding to rectangle (same on all sides)
+                padding = 5
+                
+                # Calculate text position with proper vertical alignment
+                text_x = int(x1)
+                text_y = int(y1) - padding  # Space between box and text background
+                
+                # Calculate background rectangle coordinates with equal padding
+                rect_x1 = text_x - padding
+                rect_y1 = text_y - text_size[1] - padding  # Top of background
+                rect_x2 = text_x + text_size[0] + padding
+                rect_y2 = text_y + padding  # Bottom of background
+                
+                # Draw background rectangle for text with consistent padding
+                cv2.rectangle(img, 
+                             (rect_x1, rect_y1), 
+                             (rect_x2, rect_y2), 
+                             (0, 0, 0), 
+                             -1)  # -1 fills the rectangle
+                
+                # Draw text with proper positioning inside the background
                 cv2.putText(img,
                         label,
-                        (int(x1), int(y1)-10),
+                        (text_x, text_y),
                         cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5,
-                        COLORS[class_name],
-                        2)
+                        font_size,
+                        (255, 255, 255),  # White text for better contrast
+                        thickness)
 
         # After processing all detections, calculate average confidence for each class
         for class_name in CLASSES:
