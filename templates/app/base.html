@@ -772,9 +772,11 @@
             const previewContainer = document.getElementById('preview-container');
             const previewImage = document.getElementById('preview-image');
             const imageUpload = document.getElementById('image-upload');
+            const predictionForm = document.getElementById('prediction-form');
             
             let stream = null;
-            let hasCapture = false;
+            // Make hasCapture a global variable
+            window.hasCapture = false;
             
             // Camera button click handler
             const cameraBtn = document.getElementById('camera-btn');
@@ -882,18 +884,14 @@
             }
             
             // Form submission with AJAX
-            $('.prediction-form').submit(function(e) {
+            $(document).on('submit', '.prediction-form', function(e) {
                 e.preventDefault();
                 
                 // Check if we have either a file upload or camera capture
                 const thisForm = $(this);
                 const formId = thisForm.attr('id');
-                const isCamera = formId === 'camera-form';
-                const errorMsgSelector = isCamera ? '#camera-error-message' : '#gallery-error-message';
-                const loadingSpinnerSelector = isCamera ? '#camera-loading-spinner' : '#gallery-loading-spinner';
-                const submitBtnSelector = isCamera ? '#camera-submit-btn' : '#gallery-submit-btn';
                 
-                if (formId === 'camera-form' && !hasCapture) {
+                if (formId === 'camera-form' && !window.hasCapture) {
                     alert('Please take a photo first.');
                     return false;
                 } else if (formId === 'gallery-form' && !$('#image-upload')[0].files.length) {
@@ -905,8 +903,13 @@
                 const formData = new FormData(this);
                 
                 // Show loading spinner
-                $(loadingSpinnerSelector).show();
-                $(submitBtnSelector).prop('disabled', true);
+                if (formId === 'camera-form') {
+                    $('#camera-loading-spinner').show();
+                    $('#camera-submit-btn').prop('disabled', true);
+                } else {
+                    $('#gallery-loading-spinner').show();
+                    $('#gallery-submit-btn').prop('disabled', true);
+                }
                 
                 // If using camera, ensure it's stopped
                 stopCamera();
@@ -924,17 +927,31 @@
                         if (response.success) {
                             window.location.href = response.redirect_url;
                         } else {
-                            showToast('Error', response.error, 'danger');
-                            $(errorMsgSelector).text(response.error).show();
-                            $(loadingSpinnerSelector).hide();
-                            $(submitBtnSelector).prop('disabled', false);
+                            if (formId === 'camera-form') {
+                                showToast('Error', response.error, 'danger');
+                                $('#camera-error-message').text(response.error).show();
+                                $('#camera-loading-spinner').hide();
+                                $('#camera-submit-btn').prop('disabled', false);
+                            } else {
+                                showToast('Error', response.error, 'danger');
+                                $('#gallery-error-message').text(response.error).show();
+                                $('#gallery-loading-spinner').hide();
+                                $('#gallery-submit-btn').prop('disabled', false);
+                            }
                         }
                     },
                     error: function(xhr, status, error) {
-                        showToast('Error', 'An error occurred. Please try again.', 'danger');
-                        $(errorMsgSelector).text('An error occurred. Please try again.').show();
-                        $(loadingSpinnerSelector).hide();
-                        $(submitBtnSelector).prop('disabled', false);
+                        if (formId === 'camera-form') {
+                            showToast('Error', 'An error occurred. Please try again.', 'danger');
+                            $('#camera-error-message').text('An error occurred. Please try again.').show();
+                            $('#camera-loading-spinner').hide();
+                            $('#camera-submit-btn').prop('disabled', false);
+                        } else {
+                            showToast('Error', 'An error occurred. Please try again.', 'danger');
+                            $('#gallery-error-message').text('An error occurred. Please try again.').show();
+                            $('#gallery-loading-spinner').hide();
+                            $('#gallery-submit-btn').prop('disabled', false);
+                        }
                     }
                 });
             });
@@ -1184,8 +1201,8 @@
                 // Show submit button
                 $('#camera-submit-container').show();
                 
-                // Set hasCapture flag
-                hasCapture = true;
+                // Set hasCapture flag as a global variable
+                window.hasCapture = true;
             });
             
             // Add retake functionality
@@ -1208,7 +1225,7 @@
                 document.getElementById('camera-image-data').value = '';
                 
                 // Reset hasCapture flag
-                hasCapture = false;
+                window.hasCapture = false;
             });
         }
         

@@ -13,9 +13,13 @@
             </p>
         </div>
         
-        <div class="alert alert-danger" id="gallery-error-message" style="display: {% if error %}block{% else %}none{% endif %};">
-            {% if error %}{{ error }}{% endif %}
+        {% if error %}
+        <div class="alert alert-danger" id="gallery-error-message">
+            {{ error }}
         </div>
+        {% else %}
+        <div class="alert alert-danger" id="gallery-error-message" style="display: none;"></div>
+        {% endif %}
         
         <div class="row justify-content-center mb-4">
             <div class="col-12 col-md-10 col-lg-8">
