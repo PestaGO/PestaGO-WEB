@@ -11,6 +11,7 @@ import re
 from datetime import datetime
 import gc
 import torch
+from django.core.files.base import ContentFile
 
 from .services import LeafDiseaseDetector
 
@@ -111,12 +112,11 @@ def predict(request):
                 # Extract the base64 data
                 image_data = re.sub('^data:image/.+;base64,', '', camera_image)
                 
-                # Save the image to a temporary file
-                filename = f"{uuid.uuid4()}.jpg"
-                image_path = os.path.join(detector.temp_dir, filename)
+                # Create a temporary file-like object from the base64 data
+                image_file = ContentFile(base64.b64decode(image_data), name='camera_capture.jpg')
                 
-                with open(image_path, 'wb') as f:
-                    f.write(base64.b64decode(image_data))
+                # Save the image using the same method as gallery uploads
+                image_path = detector.save_uploaded_image(image_file)
             
             # Start timer to measure processing time
             start_time = time.time()
