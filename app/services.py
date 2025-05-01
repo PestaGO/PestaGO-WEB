@@ -17,7 +17,7 @@ from django.core.cache import cache
 
 # Constants
 CONFIDENCE_THRESHOLD = 0.6
-IOU_THRESHOLD = 0.5
+IOU_THRESHOLD = 0.3
 MAX_DETECTIONS = 50
 CLASSES = ['Healthy', 'Infected Leaf', 'Disease Part']
 COLORS = {
