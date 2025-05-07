@@ -16,14 +16,14 @@ import hashlib
 from django.core.cache import cache
 
 # Constants
-CONFIDENCE_THRESHOLD = 0.6
+CONFIDENCE_THRESHOLD = 0.1
 IOU_THRESHOLD = 0.3
-MAX_DETECTIONS = 50
-CLASSES = ['Healthy', 'Infected Leaf', 'Disease Part']
+MAX_DETECTIONS = 10
+CLASSES = ['Disease Part', 'Healthy', 'Infected Leaf']
 COLORS = {
+    'Disease Part': (255, 0, 0),   # Red
     'Healthy': (0, 255, 0),      # Green
-    'Infected Leaf': (255, 165, 0),  # Orange
-    'Disease Part': (255, 0, 0)   # Red
+    'Infected Leaf': (255, 165, 0)  # Orange
 }
 MAX_IMAGE_SIZE = 640  # Maximum dimension for input images
 
